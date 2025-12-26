@@ -109,6 +109,7 @@ export function CookbookList() {
             <CookbookCard
               key={cookbook.id}
               cookbook={cookbook}
+              recipeCount={cookbook.recipe_count || 0}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />
