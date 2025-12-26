@@ -24,21 +24,23 @@ src/
 │   ├── cook-mode/    # Cook Mode components (CookModeHeader, CookModeStep, CookModeNavigation,
 │   │                 #   CookModeIngredientDrawer, CookModeIngredientSidebar, CookModeExitDialog)
 │   ├── import/       # Import components (ImportModal, PDFImporter, PDFDropzone, PDFPageSelector,
-│   │                 #   ImportPreview)
+│   │                 #   PhotoImporter, PhotoDropzone, ImportPreview)
 │   └── foods/        # Food search/matching components (FoodSearch)
 ├── pages/            # Route pages (Dashboard, RecipeView, RecipeNew, RecipeEdit, CookMode,
 │                     #   CookbookView, CookbookList)
 ├── hooks/            # Custom React hooks (useCookbooks, useRecipes, useCookMode)
 ├── services/         # API/Supabase service functions (recipes, cookbooks, foods, media, parsing)
-│   └── import/       # Import services (pdfExtractor for PDF processing with pdfjs-dist)
+│   └── import/       # Import services (pdfExtractor for PDF processing, photoExtractor for images)
 ├── stores/           # Zustand stores (authStore, uiStore, cookModeStore)
 ├── types/            # TypeScript types and database types
 └── lib/              # Utilities, constants, validators, formatQuantity for fractions
 
 supabase/
 ├── functions/        # Edge Functions (Deno runtime)
+│   ├── _shared/             # Shared utilities (CORS headers)
 │   ├── parse-recipe/        # AI recipe parsing with Claude 3.5 Haiku
 │   ├── extract-pdf-recipe/  # PDF recipe extraction with Claude Vision (text + image OCR)
+│   ├── extract-photo-recipe/ # Photo/image recipe extraction with Claude Vision OCR
 │   └── search-foods/        # USDA food search
 └── migrations/       # Database migrations (001_initial_schema, 002_storage_bucket,
                       #   003_add_import_metadata)
@@ -197,6 +199,13 @@ USDA_API_KEY=...
   - Confidence scoring (high/medium/low)
   - Import preview before saving
   - Import metadata tracking (method, confidence, filename, warnings)
+- [x] **Photo Import** - Import recipes from images with OCR
+  - Drag-and-drop image upload (max 10MB)
+  - Support for JPG, PNG, WebP, HEIC formats
+  - Image preview before extraction
+  - Claude Vision API OCR for handwritten or printed recipes
+  - Confidence scoring with quality warnings
+  - Same import preview and metadata tracking as PDF
 - [x] USDA food search - search FoodData Central API
 - [x] Ingredient-to-food matching - link ingredients to USDA foods
 - [x] Ingredient review modal - review AI-parsed ingredients with match suggestions
@@ -254,7 +263,6 @@ USDA_API_KEY=...
 ### Pending Features
 
 **Import Modes:**
-- [ ] Photo/image import - capture recipe from photos with OCR
 - [ ] URL import - scrape recipes from websites
 - [ ] Social media import - extract recipes from social media posts
 
