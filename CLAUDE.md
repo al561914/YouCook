@@ -23,20 +23,25 @@ src/
 │   │                 #   HeroImage, StepsList)
 │   ├── cook-mode/    # Cook Mode components (CookModeHeader, CookModeStep, CookModeNavigation,
 │   │                 #   CookModeIngredientDrawer, CookModeIngredientSidebar, CookModeExitDialog)
+│   ├── import/       # Import components (ImportModal, PDFImporter, PDFDropzone, PDFPageSelector,
+│   │                 #   ImportPreview)
 │   └── foods/        # Food search/matching components (FoodSearch)
 ├── pages/            # Route pages (Dashboard, RecipeView, RecipeNew, RecipeEdit, CookMode,
 │                     #   CookbookView, CookbookList)
 ├── hooks/            # Custom React hooks (useCookbooks, useRecipes, useCookMode)
 ├── services/         # API/Supabase service functions (recipes, cookbooks, foods, media, parsing)
+│   └── import/       # Import services (pdfExtractor for PDF processing with pdfjs-dist)
 ├── stores/           # Zustand stores (authStore, uiStore, cookModeStore)
 ├── types/            # TypeScript types and database types
 └── lib/              # Utilities, constants, validators, formatQuantity for fractions
 
 supabase/
 ├── functions/        # Edge Functions (Deno runtime)
-│   ├── parse-recipe/ # AI recipe parsing with Claude 3.5 Haiku
-│   └── search-foods/ # USDA food search
-└── migrations/       # Database migrations (001_initial_schema, 002_storage_bucket)
+│   ├── parse-recipe/        # AI recipe parsing with Claude 3.5 Haiku
+│   ├── extract-pdf-recipe/  # PDF recipe extraction with Claude Vision (text + image OCR)
+│   └── search-foods/        # USDA food search
+└── migrations/       # Database migrations (001_initial_schema, 002_storage_bucket,
+                      #   003_add_import_metadata)
 ```
 
 ## Key Patterns
@@ -109,13 +114,21 @@ export interface RecipeWithRelations extends Recipe {
 
 ### Core Tables
 - `cookbooks` - Recipe collections (user_id, name, description)
-- `recipes` - Recipe data (cookbook_id, title, servings, difficulty, parsing_status)
+- `recipes` - Recipe data (cookbook_id, title, servings, difficulty, parsing_status, import_metadata)
 - `recipe_ingredients` - Parsed ingredients (recipe_id, food_id, name, quantity, unit, match_status)
 - `recipe_steps` - Parsed instructions (recipe_id, step_number, instruction)
 - `recipe_media` - Photos/images (recipe_id, step_id, url, media_type, order_index)
 - `recipe_nutrition` - Saved nutrition totals per recipe
 - `foods` - USDA food cache (external_id, name, brand, source)
 - `food_nutrients` - Nutrition data per food (calories, protein_g, carbs_g, fat_g, etc.)
+
+### Import Metadata
+- `recipes.import_metadata` - JSONB column tracking import source details
+  - `method`: "pdf" | "photo" | "url" | "social"
+  - `confidence`: "high" | "medium" | "low"
+  - `filename`: Original file name
+  - `extracted_at`: ISO timestamp
+  - `warnings`: Array of extraction warnings
 
 ### Storage
 - `recipe-media` bucket - Public bucket for recipe images, organized by user_id/recipe_id
@@ -176,6 +189,14 @@ USDA_API_KEY=...
 - [x] Recipe editing with collapsible sections
 - [x] AI recipe parsing (Claude 3.5 Haiku) - parses ingredients and instructions from raw text
 - [x] Re-parse recipes - can re-run AI parsing with automatic ingredient review modal
+- [x] **PDF Import** - Import recipes from PDF files
+  - Drag-and-drop PDF upload (max 10MB, 10 pages)
+  - Page selection with thumbnail preview
+  - Dual extraction: text extraction for searchable PDFs, OCR for scanned PDFs
+  - Claude Vision API integration for image-based extraction
+  - Confidence scoring (high/medium/low)
+  - Import preview before saving
+  - Import metadata tracking (method, confidence, filename, warnings)
 - [x] USDA food search - search FoodData Central API
 - [x] Ingredient-to-food matching - link ingredients to USDA foods
 - [x] Ingredient review modal - review AI-parsed ingredients with match suggestions
@@ -231,6 +252,13 @@ USDA_API_KEY=...
   - Loading and empty states
 
 ### Pending Features
+
+**Import Modes:**
+- [ ] Photo/image import - capture recipe from photos with OCR
+- [ ] URL import - scrape recipes from websites
+- [ ] Social media import - extract recipes from social media posts
+
+**Other Features:**
 - [ ] Save/edit nutrition data - persist calculated nutrition to `recipe_nutrition` table
 - [ ] Step photos - attach photos to individual instruction steps (column exists)
 - [ ] Meal planning
