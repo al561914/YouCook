@@ -3,6 +3,7 @@ import { FileText, Image, Link as LinkIcon, Share2, X } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { PDFImporter } from './PDFImporter'
+import { PhotoImporter } from './PhotoImporter'
 
 type ImportMethod = 'pdf' | 'photo' | 'url' | 'social' | null
 
@@ -102,14 +103,12 @@ export function ImportModal({ open, onClose, onRecipeExtracted }: ImportModalPro
                 size="lg"
                 className="h-auto py-4"
                 onClick={() => handleMethodSelect('photo')}
-                disabled
               >
                 <div className="flex flex-col items-center gap-2">
                   <div className="p-2 rounded-lg bg-green-100">
                     <Image className="h-6 w-6 text-green-600" />
                   </div>
                   <p className="font-medium">Photo</p>
-                  <span className="text-xs text-gray-500">Coming soon</span>
                 </div>
               </Button>
 
@@ -149,6 +148,9 @@ export function ImportModal({ open, onClose, onRecipeExtracted }: ImportModalPro
         ) : selectedMethod === 'pdf' ? (
           /* PDF Importer */
           <PDFImporter onComplete={handleComplete} onCancel={handleBack} />
+        ) : selectedMethod === 'photo' ? (
+          /* Photo Importer */
+          <PhotoImporter onComplete={handleComplete} onCancel={handleBack} />
         ) : (
           /* Placeholder for other methods */
           <div className="py-8 text-center text-gray-500">

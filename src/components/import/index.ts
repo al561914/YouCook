@@ -1,5 +1,7 @@
 export { PDFDropzone } from './PDFDropzone'
 export { PDFPageSelector } from './PDFPageSelector'
 export { PDFImporter } from './PDFImporter'
+export { PhotoDropzone } from './PhotoDropzone'
+export { PhotoImporter } from './PhotoImporter'
 export { ImportPreview } from './ImportPreview'
 export { ImportModal } from './ImportModal'
