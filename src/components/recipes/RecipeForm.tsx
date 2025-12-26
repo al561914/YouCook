@@ -39,6 +39,7 @@ interface RecipeFormProps {
   defaultCookbookId?: string
   loading?: boolean
   onRefresh?: () => void
+  importedData?: RecipeFormData | null
 }
 
 export function RecipeForm({
@@ -48,6 +49,7 @@ export function RecipeForm({
   defaultCookbookId,
   loading = false,
   onRefresh,
+  importedData,
 }: RecipeFormProps) {
   const isEditing = !!recipe
 
@@ -94,10 +96,12 @@ export function RecipeForm({
         rawIngredientsText: recipe.raw_ingredients_text || '',
         rawProcedureText: recipe.raw_procedure_text || '',
       })
+    } else if (importedData) {
+      reset(importedData)
     } else if (defaultCookbookId) {
       setValue('cookbookId', defaultCookbookId)
     }
-  }, [recipe, defaultCookbookId, reset, setValue])
+  }, [recipe, importedData, defaultCookbookId, reset, setValue])
 
   const handleFormSubmit = async (data: RecipeFormData) => {
     await onSubmit(data)

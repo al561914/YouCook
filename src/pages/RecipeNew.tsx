@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, BookOpen } from 'lucide-react'
+import { ArrowLeft, BookOpen, FileUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { RecipeForm, type RecipeFormData } from '@/components/recipes/RecipeForm'
+import { ImportModal } from '@/components/import'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useCookbooks } from '@/hooks/useCookbooks'
 import { useRecipes } from '@/hooks/useRecipes'
@@ -16,6 +17,8 @@ export function RecipeNew() {
   const { createRecipe } = useRecipes()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [importModalOpen, setImportModalOpen] = useState(false)
+  const [importedData, setImportedData] = useState<RecipeFormData | null>(null)
 
   const handleSubmit = async (data: RecipeFormData) => {
     setSubmitting(true)
@@ -28,6 +31,24 @@ export function RecipeNew() {
       setError(err instanceof Error ? err.message : 'Failed to create recipe')
       setSubmitting(false)
     }
+  }
+
+  const handleImportRecipe = (extractedRecipe: any) => {
+    // Convert extracted recipe to RecipeFormData format
+    const formData: RecipeFormData = {
+      title: extractedRecipe.title,
+      description: extractedRecipe.description || '',
+      cookbookId: defaultCookbookId || '',
+      servings: extractedRecipe.servings,
+      prepTimeMinutes: extractedRecipe.prep_time_minutes,
+      cookTimeMinutes: extractedRecipe.cook_time_minutes,
+      difficulty: 'medium', // Default difficulty
+      rawIngredientsText: extractedRecipe.raw_ingredients_text,
+      rawProcedureText: extractedRecipe.raw_procedure_text,
+    }
+
+    setImportedData(formData)
+    setImportModalOpen(false)
   }
 
   // Track if we've ever had cookbooks loaded (prevents form unmount during refetch)
@@ -43,18 +64,30 @@ export function RecipeNew() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link to={defaultCookbookId ? `/cookbooks/${defaultCookbookId}` : '/dashboard'}>
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Create New Recipe</h1>
-          <p className="mt-1 text-gray-600">
-            Add a new recipe to your collection
-          </p>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link to={defaultCookbookId ? `/cookbooks/${defaultCookbookId}` : '/dashboard'}>
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Create New Recipe</h1>
+            <p className="mt-1 text-gray-600">
+              Add a new recipe to your collection
+            </p>
+          </div>
         </div>
+        {hasCookbooks && (
+          <Button
+            variant="outline"
+            onClick={() => setImportModalOpen(true)}
+            disabled={submitting}
+          >
+            <FileUp className="h-4 w-4 mr-2" />
+            Import
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -84,8 +117,15 @@ export function RecipeNew() {
           onSubmit={handleSubmit}
           defaultCookbookId={defaultCookbookId}
           loading={submitting}
+          importedData={importedData}
         />
       )}
+
+      <ImportModal
+        open={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onRecipeExtracted={handleImportRecipe}
+      />
     </div>
   )
 }

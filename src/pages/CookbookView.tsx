@@ -29,34 +29,11 @@ export function CookbookView() {
   const [sortBy, setSortBy] = useState<SortOption>('recent')
   const [filterDifficulty, setFilterDifficulty] = useState<string>('all')
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
-  }
+  // Extract recipes (safe to do before early returns)
+  const cookbookWithRecipes = cookbook as CookbookWithRecipes | null
+  const allRecipes = cookbookWithRecipes?.recipes || []
 
-  if (error || !cookbook) {
-    return (
-      <div className="space-y-4">
-        <Button variant="ghost" asChild>
-          <Link to="/cookbooks">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Cookbooks
-          </Link>
-        </Button>
-        <div className="rounded-md bg-red-50 p-4 text-red-600">
-          {error || 'Cookbook not found'}
-        </div>
-      </div>
-    )
-  }
-
-  const cookbookWithRecipes = cookbook as CookbookWithRecipes
-  const allRecipes = cookbookWithRecipes.recipes || []
-
-  // Filter and sort recipes
+  // Filter and sort recipes (must be called before early returns)
   const filteredAndSortedRecipes = useMemo(() => {
     let filtered = allRecipes
 
@@ -99,6 +76,31 @@ export function CookbookView() {
 
     return sorted
   }, [allRecipes, searchQuery, filterDifficulty, sortBy])
+
+  // Early returns after all hooks
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
+
+  if (error || !cookbook) {
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" asChild>
+          <Link to="/cookbooks">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Cookbooks
+          </Link>
+        </Button>
+        <div className="rounded-md bg-red-50 p-4 text-red-600">
+          {error || 'Cookbook not found'}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
