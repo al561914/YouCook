@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /* Custom colors for RecipeVault */
+  --color-primary-50: oklch(0.97 0.02 145);
+  --color-primary-100: oklch(0.94 0.04 145);
+  --color-primary-200: oklch(0.88 0.08 145);
+  --color-primary-300: oklch(0.80 0.12 145);
+  --color-primary-400: oklch(0.70 0.16 145);
+  --color-primary-500: oklch(0.60 0.18 145);
+  --color-primary-600: oklch(0.50 0.16 145);
+  --color-primary-700: oklch(0.42 0.14 145);
+  --color-primary-800: oklch(0.35 0.12 145);
+  --color-primary-900: oklch(0.28 0.10 145);
+  --color-primary-950: oklch(0.18 0.06 145);
+
+  --radius-lg: 0.5rem;
+  --radius-md: calc(var(--radius-lg) - 2px);
+  --radius-sm: calc(var(--radius-lg) - 4px);
+}
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+
+  body {
+    @apply bg-white text-gray-900 antialiased;
+    font-family: var(--font-sans);
+  }
+}
