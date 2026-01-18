@@ -8,7 +8,7 @@ RecipeVault is a digital recipe repository with nutritional tracking. Users can 
 - **Styling**: TailwindCSS v4
 - **State**: Zustand (stores), React Hook Form (forms)
 - **Backend**: Supabase (PostgreSQL, Auth, Edge Functions, Storage)
-- **APIs**: Claude API (recipe parsing), USDA FoodData Central (nutrition)
+- **APIs**: Claude API (recipe parsing), USDA FoodData Central (nutrition), Open Food Facts (packaged foods)
 
 ## Project Structure
 ```
@@ -41,7 +41,7 @@ supabase/
 │   ├── parse-recipe/        # AI recipe parsing with Claude 3.5 Haiku
 │   ├── extract-pdf-recipe/  # PDF recipe extraction with Claude Vision (text + image OCR)
 │   ├── extract-photo-recipe/ # Photo/image recipe extraction with Claude Vision OCR
-│   └── search-foods/        # USDA food search
+│   └── search-foods/        # Food search (USDA FoodData Central + Open Food Facts in parallel)
 └── migrations/       # Database migrations (001_initial_schema, 002_storage_bucket,
                       #   003_add_import_metadata)
 ```
@@ -71,6 +71,31 @@ Supabase Edge Functions run on Deno. Use direct fetch for external APIs (not SDK
 // Use fetch, not SDK imports
 const response = await fetch('https://api.anthropic.com/v1/messages', {...})
 ```
+
+### Food Search System
+Food search uses a multi-source strategy with intelligent prioritization:
+
+**Search Flow:**
+1. Search local database first (user-created foods + cached API results)
+2. If insufficient results, query USDA and Open Food Facts **in parallel**
+3. Merge and deduplicate results
+4. Sort by source quality and relevance
+
+**Barcode Search:**
+- Enter 8-13 digit barcode for exact product match from Open Food Facts
+- Supports EAN-13, UPC-A, EAN-8, UPC-E formats
+- Direct API lookup for instant results
+- Perfect for scanning packaged products
+
+**Source Prioritization (highest to lowest):**
+1. USDA Foundation Foods (most accurate, unprocessed foods)
+2. USDA SR Legacy (standard reference, generic foods)
+3. Open Food Facts (good for packaged/branded products)
+4. USDA Branded Foods (manufacturer data, less standardized)
+
+**API Details:**
+- **USDA FoodData Central**: Requires API key, excellent for raw ingredients
+- **Open Food Facts**: No API key needed, excellent for packaged products with barcodes
 
 ### Database Types
 Types are auto-generated in `src/types/database.ts`. Derived types in other files:
@@ -166,8 +191,9 @@ VITE_SUPABASE_ANON_KEY=...
 
 ### Edge Functions (.env.local or supabase secrets)
 ```
-ANTHROPIC_API_KEY=...
-USDA_API_KEY=...
+ANTHROPIC_API_KEY=...     # Required for recipe parsing
+USDA_API_KEY=...           # Required for USDA FoodData Central
+                           # Open Food Facts requires no API key
 ```
 
 ## Conventions
@@ -206,8 +232,14 @@ USDA_API_KEY=...
   - Claude Vision API OCR for handwritten or printed recipes
   - Confidence scoring with quality warnings
   - Same import preview and metadata tracking as PDF
-- [x] USDA food search - search FoodData Central API
-- [x] Ingredient-to-food matching - link ingredients to USDA foods
+- [x] **Food Database** - Search and manage foods for nutrition tracking
+  - Dual-API search: USDA FoodData Central + Open Food Facts in parallel
+  - Intelligent source prioritization (Foundation > SR Legacy > OFF > Branded)
+  - Local database search with caching
+  - Create custom foods with manual nutrition entry
+  - Edit and delete user-created foods
+  - Source badges (USDA, Open Food Facts, Custom)
+- [x] Ingredient-to-food matching - link ingredients to foods from multiple sources
 - [x] Ingredient review modal - review AI-parsed ingredients with match suggestions
 - [x] Nutrition calculation per serving - calculated from matched ingredients
 - [x] Recipe media/images - upload, gallery with lightbox, thumbnails on recipe cards

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { MainLayout } from '@/components/layout'
 import { ErrorBoundary } from '@/components/common'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { Toaster } from '@/components/ui/toaster'
 import {
   Home,
   Login,
@@ -133,6 +134,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
+        <Toaster />
       </BrowserRouter>
     </ErrorBoundary>
   )

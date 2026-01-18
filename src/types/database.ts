@@ -81,6 +81,8 @@ export type Database = {
           external_id: string | null
           serving_size: number | null
           serving_unit: string | null
+          serving_description: string | null
+          original_source: string | null
           created_at: string
           updated_at: string
         }
@@ -94,6 +96,8 @@ export type Database = {
           external_id?: string | null
           serving_size?: number | null
           serving_unit?: string | null
+          serving_description?: string | null
+          original_source?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -107,6 +111,8 @@ export type Database = {
           external_id?: string | null
           serving_size?: number | null
           serving_unit?: string | null
+          serving_description?: string | null
+          original_source?: string | null
           created_at?: string
           updated_at?: string
         }

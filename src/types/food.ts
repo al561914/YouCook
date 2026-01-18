@@ -10,6 +10,7 @@ export type FoodNutrientsInsert = Database['public']['Tables']['food_nutrients']
 export type MatchStatus = Database['public']['Enums']['match_status']
 
 export interface FoodWithNutrients extends Food {
+  food_nutrients?: FoodNutrients[]
   nutrients?: FoodNutrients
 }
 
@@ -25,6 +26,9 @@ export interface FoodSearchResult {
   brand: string | null
   source: string
   externalId: string
+  servingSize: number | null
+  servingUnit: string | null
+  servingDescription: string | null
   nutrients: {
     calories: number | null
     protein_g: number | null
