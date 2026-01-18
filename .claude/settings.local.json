@@ -4,7 +4,11 @@
       "Bash(npm run build:*)",
       "Bash(npm run dev:*)",
       "Bash(cat:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(grep:*)",
+      "WebFetch(domain:api.nal.usda.gov)"
     ]
   }
 }
