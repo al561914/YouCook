@@ -94,6 +94,9 @@ export function IngredientReviewModal({
         brand: candidate.brand || null,
         source: 'usda', // Assuming USDA for now
         externalId: candidate.id,
+        servingSize: null,
+        servingUnit: null,
+        servingDescription: null,
         nutrients: {
           calories: null,
           protein_g: null,

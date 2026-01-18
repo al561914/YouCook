@@ -127,19 +127,20 @@ export async function saveFood(food: FoodSearchResult, userId?: string): Promise
     .single()
 
   if (existing) {
+    const existingFood = existing as Food
     // If existing food has no user_id and we have one, update it
-    if (!existing.user_id && userId) {
+    if (!existingFood.user_id && userId) {
       const { data: updated, error: updateError } = await supabase
         .from('foods')
         .update({ user_id: userId } as never)
-        .eq('id', existing.id)
+        .eq('id', existingFood.id)
         .select()
         .single()
 
       if (updateError) throw updateError
       return updated as Food
     }
-    return existing as Food
+    return existingFood
   }
 
   // Insert new food
@@ -352,8 +353,9 @@ export async function updateCustomFood(
   if (foodData.servingUnit !== undefined) foodUpdate.serving_unit = foodData.servingUnit
 
   // If this is an API food being edited for the first time, convert it to custom
-  if (currentFood.source !== 'user' && !currentFood.original_source) {
-    foodUpdate.original_source = currentFood.source // Preserve the API source
+  const food = currentFood as { source: string; original_source: string | null }
+  if (food.source !== 'user' && !food.original_source) {
+    foodUpdate.original_source = food.source // Preserve the API source
     foodUpdate.source = 'user' // Convert to custom food
   }
 
