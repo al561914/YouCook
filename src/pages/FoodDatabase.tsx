@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Database, Plus, Search } from 'lucide-react'
+import { Database, Plus, Search, Camera } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { FoodList, CustomFoodForm, type CustomFoodFormData } from '@/components/foods'
+import { FoodList, CustomFoodForm, BarcodeScanner, type CustomFoodFormData } from '@/components/foods'
 import { ConfirmDialog } from '@/components/common'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useToast } from '@/hooks/use-toast'
@@ -25,6 +25,7 @@ export function FoodDatabase() {
   const [deletingFood, setDeletingFood] = useState<FoodWithNutrients | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [scannerOpen, setScannerOpen] = useState(false)
 
   // Load user's custom foods on mount
   useEffect(() => {
@@ -59,6 +60,35 @@ export function FoodDatabase() {
       setSearchSource(result.source)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to search foods')
+      setSearchResults([])
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  const handleBarcodeScan = async (barcode: string) => {
+    setSearchQuery(barcode)
+    setSearching(true)
+    setError(null)
+
+    try {
+      const result = await foodService.searchFoods(barcode, 20)
+      setSearchResults(result.foods)
+      setSearchSource(result.source)
+
+      if (result.foods.length === 0) {
+        toast({
+          title: "No product found",
+          description: `No product found for barcode ${barcode}. Try searching by name.`,
+        })
+      } else if (result.foods.length === 1) {
+        toast({
+          title: "Product found!",
+          description: result.foods[0].name,
+        })
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to search barcode')
       setSearchResults([])
     } finally {
       setSearching(false)
@@ -275,6 +305,15 @@ export function FoodDatabase() {
             <Button type="submit" disabled={searching || !searchQuery.trim()}>
               {searching ? 'Searching...' : 'Search'}
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setScannerOpen(true)}
+              title="Scan barcode with camera"
+            >
+              <Camera className="h-4 w-4" />
+              <span className="sr-only sm:not-sr-only sm:ml-2">Scan</span>
+            </Button>
           </form>
 
           {searching ? (
@@ -375,6 +414,12 @@ export function FoodDatabase() {
         variant="destructive"
         onConfirm={handleConfirmDelete}
         loading={submitting}
+      />
+
+      <BarcodeScanner
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onScan={handleBarcodeScan}
       />
     </div>
   )
