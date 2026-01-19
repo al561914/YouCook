@@ -36,7 +36,6 @@ export function BarcodeScanner({ open, onOpenChange, onScan }: BarcodeScannerPro
   const [error, setError] = useState<string | null>(null)
   const [showManualInput, setShowManualInput] = useState(false)
   const [manualBarcode, setManualBarcode] = useState('')
-  const [scanAttempts, setScanAttempts] = useState(0)
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const isCleaningUpRef = useRef(false)
 
@@ -81,12 +80,10 @@ export function BarcodeScanner({ open, onOpenChange, onScan }: BarcodeScannerPro
       setError(null)
       setShowManualInput(false)
       setManualBarcode('')
-      setScanAttempts(0)
       return
     }
 
     let cancelled = false
-    let attemptCounter = 0
 
     const startScanner = async () => {
       await new Promise(resolve => setTimeout(resolve, 400))
@@ -107,28 +104,21 @@ export function BarcodeScanner({ open, onOpenChange, onScan }: BarcodeScannerPro
       setError(null)
 
       try {
-        console.log('Creating scanner with formats:', BARCODE_FORMATS)
-
         const scanner = new Html5Qrcode(SCANNER_ID, {
           verbose: false,
           formatsToSupport: BARCODE_FORMATS,
         })
         scannerRef.current = scanner
 
-        const config = {
-          fps: 10,
-          qrbox: { width: 250, height: 150 },
-          disableFlip: false,
-        }
-
-        console.log('Starting scanner with config:', config)
-
         await scanner.start(
           { facingMode: 'environment' },
-          config,
-          (decodedText, result) => {
-            console.log('✅ Barcode detected:', decodedText, result)
-
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 150 },
+            disableFlip: false,
+          },
+          (decodedText) => {
+            // Barcode detected
             if (scannerRef.current) {
               const s = scannerRef.current
               scannerRef.current = null
@@ -144,21 +134,15 @@ export function BarcodeScanner({ open, onOpenChange, onScan }: BarcodeScannerPro
             }
           },
           () => {
-            // This is called frequently when no barcode is in view
-            attemptCounter++
-            if (attemptCounter % 50 === 0) {
-              console.log(`Scanning... (${attemptCounter} frames checked)`)
-              setScanAttempts(attemptCounter)
-            }
+            // Called when no barcode is in view - ignore
           }
         )
 
         if (!cancelled && scannerRef.current) {
-          console.log('✅ Scanner started successfully')
           setState('scanning')
         }
       } catch (err) {
-        console.error('❌ Scanner error:', err)
+        console.error('Scanner error:', err)
         if (cancelled) return
 
         const errorMessage = err instanceof Error ? err.message : 'Failed to start camera'
@@ -239,12 +223,11 @@ export function BarcodeScanner({ open, onOpenChange, onScan }: BarcodeScannerPro
 
                 {/* Scanning indicator */}
                 {state === 'scanning' && (
-                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-xs text-white bg-black/50 rounded px-2 py-1">
+                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center text-xs text-white bg-black/50 rounded px-2 py-1">
                     <span className="flex items-center gap-1">
                       <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                       Scanning...
                     </span>
-                    <span>{scanAttempts} frames</span>
                   </div>
                 )}
 
