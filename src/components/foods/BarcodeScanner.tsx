@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
-import { Html5Qrcode } from 'html5-qrcode'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode'
 import { Camera, CameraOff, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,96 +20,133 @@ type ScannerState = 'idle' | 'starting' | 'scanning' | 'error'
 
 const SCANNER_ID = 'barcode-scanner-reader'
 
+// Barcode formats to scan for
+const BARCODE_FORMATS = [
+  Html5QrcodeSupportedFormats.EAN_13,
+  Html5QrcodeSupportedFormats.EAN_8,
+  Html5QrcodeSupportedFormats.UPC_A,
+  Html5QrcodeSupportedFormats.UPC_E,
+  Html5QrcodeSupportedFormats.CODE_128,
+  Html5QrcodeSupportedFormats.CODE_39,
+]
+
 export function BarcodeScanner({ open, onOpenChange, onScan }: BarcodeScannerProps) {
   const [state, setState] = useState<ScannerState>('idle')
   const [error, setError] = useState<string | null>(null)
   const scannerRef = useRef<Html5Qrcode | null>(null)
-  const mountedRef = useRef(true)
+  const isCleaningUpRef = useRef(false)
+
+  // Use refs to avoid stale closures in callbacks
+  const onScanRef = useRef(onScan)
+  const onOpenChangeRef = useRef(onOpenChange)
 
   useEffect(() => {
-    mountedRef.current = true
-    return () => {
-      mountedRef.current = false
+    onScanRef.current = onScan
+    onOpenChangeRef.current = onOpenChange
+  }, [onScan, onOpenChange])
+
+  const cleanup = useCallback(async () => {
+    if (isCleaningUpRef.current) return
+    isCleaningUpRef.current = true
+
+    const scanner = scannerRef.current
+    if (scanner) {
+      scannerRef.current = null
+      try {
+        const isScanning = scanner.isScanning
+        if (isScanning) {
+          await scanner.stop()
+        }
+      } catch (e) {
+        // Ignore stop errors
+        console.log('Scanner stop error (expected):', e)
+      }
+      try {
+        scanner.clear()
+      } catch (e) {
+        // Ignore clear errors
+        console.log('Scanner clear error (expected):', e)
+      }
     }
+
+    isCleaningUpRef.current = false
   }, [])
 
   useEffect(() => {
     if (!open) {
-      // Clean up when dialog closes
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {})
-        scannerRef.current.clear()
-        scannerRef.current = null
-      }
+      cleanup()
       setState('idle')
       setError(null)
       return
     }
 
-    // Start scanner when dialog opens
+    let cancelled = false
+
     const startScanner = async () => {
       // Wait for DOM to be ready
-      await new Promise(resolve => setTimeout(resolve, 300))
+      await new Promise(resolve => setTimeout(resolve, 400))
 
-      if (!mountedRef.current || !open) return
+      if (cancelled) return
 
-      // Clean up any existing scanner first
-      if (scannerRef.current) {
-        try {
-          await scannerRef.current.stop()
-          scannerRef.current.clear()
-        } catch {
-          // Ignore cleanup errors
-        }
-        scannerRef.current = null
+      // Make sure container exists
+      const container = document.getElementById(SCANNER_ID)
+      if (!container) {
+        console.error('Scanner container not found')
+        return
       }
+
+      // Clean up any existing scanner
+      await cleanup()
+
+      if (cancelled) return
 
       setState('starting')
       setError(null)
 
       try {
-        const scanner = new Html5Qrcode(SCANNER_ID, { verbose: false })
+        const scanner = new Html5Qrcode(SCANNER_ID, {
+          verbose: false,
+          formatsToSupport: BARCODE_FORMATS,
+        })
         scannerRef.current = scanner
 
-        // Use facingMode for better iOS compatibility
         await scanner.start(
           { facingMode: 'environment' },
           {
-            fps: 10,
-            qrbox: (viewfinderWidth, viewfinderHeight) => {
-              // Responsive scanning box
-              const minEdge = Math.min(viewfinderWidth, viewfinderHeight)
-              const boxSize = Math.floor(minEdge * 0.7)
-              return {
-                width: Math.min(boxSize, 250),
-                height: Math.min(Math.floor(boxSize * 0.6), 150),
-              }
-            },
+            fps: 15,
+            qrbox: { width: 280, height: 160 },
+            aspectRatio: 1.333,
           },
           (decodedText) => {
             // Success - barcode detected
-            if (mountedRef.current) {
-              // Stop scanner immediately to prevent multiple reads
-              if (scannerRef.current) {
-                scannerRef.current.stop().catch(() => {})
-                scannerRef.current.clear()
-                scannerRef.current = null
-              }
-              onScan(decodedText)
-              onOpenChange(false)
+            console.log('Barcode detected:', decodedText)
+
+            // Prevent multiple callbacks
+            if (scannerRef.current) {
+              const s = scannerRef.current
+              scannerRef.current = null
+
+              s.stop().then(() => {
+                s.clear()
+              }).catch(() => {
+                try { s.clear() } catch {}
+              }).finally(() => {
+                onScanRef.current(decodedText)
+                onOpenChangeRef.current(false)
+              })
             }
           },
           () => {
-            // Scan error - ignore (called when no barcode in view)
+            // No barcode found in frame - this is called frequently, ignore
           }
         )
 
-        if (mountedRef.current) {
+        if (!cancelled && scannerRef.current) {
           setState('scanning')
         }
       } catch (err) {
         console.error('Scanner error:', err)
-        if (!mountedRef.current) return
+        if (cancelled) return
 
         const errorMessage = err instanceof Error ? err.message : 'Failed to start camera'
 
@@ -129,26 +166,34 @@ export function BarcodeScanner({ open, onOpenChange, onScan }: BarcodeScannerPro
 
     startScanner()
 
-    // Cleanup function
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {})
-        scannerRef.current.clear()
-        scannerRef.current = null
-      }
+      cancelled = true
+      cleanup()
     }
-  }, [open, onScan, onOpenChange])
+  }, [open, cleanup])
 
-  const handleRetry = async () => {
-    setState('idle')
+  const handleRetry = () => {
     setError(null)
-    // Trigger re-mount by toggling open state
+    setState('idle')
+    // Close and reopen to restart
     onOpenChange(false)
-    setTimeout(() => onOpenChange(true), 100)
+    setTimeout(() => onOpenChange(true), 200)
+  }
+
+  const handleClose = async () => {
+    await cleanup()
+    onOpenChange(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(newOpen) => {
+        if (!newOpen) {
+          handleClose()
+        }
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -156,7 +201,7 @@ export function BarcodeScanner({ open, onOpenChange, onScan }: BarcodeScannerPro
             Scan Barcode
           </DialogTitle>
           <DialogDescription>
-            Point your camera at a product barcode (EAN, UPC)
+            Point your camera at a product barcode
           </DialogDescription>
         </DialogHeader>
 
@@ -164,13 +209,10 @@ export function BarcodeScanner({ open, onOpenChange, onScan }: BarcodeScannerPro
           {/* Scanner container */}
           <div
             className="relative overflow-hidden rounded-lg bg-gray-900"
-            style={{ minHeight: '280px' }}
+            style={{ minHeight: '300px' }}
           >
-            {/* The scanner library will render into this div */}
-            <div
-              id={SCANNER_ID}
-              style={{ width: '100%' }}
-            />
+            {/* The scanner library renders into this div */}
+            <div id={SCANNER_ID} style={{ width: '100%' }} />
 
             {/* Loading state overlay */}
             {state === 'starting' && (
@@ -206,7 +248,7 @@ export function BarcodeScanner({ open, onOpenChange, onScan }: BarcodeScannerPro
 
           {/* Info text */}
           <p className="text-xs text-gray-500 text-center">
-            Supports EAN-13, UPC-A, EAN-8, UPC-E barcodes
+            Supports EAN-13, UPC-A, EAN-8, UPC-E, Code 128, Code 39
           </p>
         </div>
       </DialogContent>
