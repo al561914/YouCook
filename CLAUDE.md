@@ -25,9 +25,10 @@ src/
 │   │                 #   CookModeIngredientDrawer, CookModeIngredientSidebar, CookModeExitDialog)
 │   ├── import/       # Import components (ImportModal, PDFImporter, PDFDropzone, PDFPageSelector,
 │   │                 #   PhotoImporter, PhotoDropzone, ImportPreview)
-│   └── foods/        # Food search/matching components (FoodSearch)
+│   └── foods/        # Food search/matching components (FoodSearch, BarcodeScanner, FoodCard,
+│                     #   FoodList, CustomFoodForm)
 ├── pages/            # Route pages (Dashboard, RecipeView, RecipeNew, RecipeEdit, CookMode,
-│                     #   CookbookView, CookbookList)
+│                     #   CookbookView, CookbookList, FoodDatabase)
 ├── hooks/            # Custom React hooks (useCookbooks, useRecipes, useCookMode)
 ├── services/         # API/Supabase service functions (recipes, cookbooks, foods, media, parsing)
 │   └── import/       # Import services (pdfExtractor for PDF processing, photoExtractor for images)
@@ -82,9 +83,10 @@ Food search uses a multi-source strategy with intelligent prioritization:
 4. Sort by source quality and relevance
 
 **Barcode Search:**
-- Enter 8-13 digit barcode for exact product match from Open Food Facts
-- Supports EAN-13, UPC-A, EAN-8, UPC-E formats
-- Direct API lookup for instant results
+- Camera scanning with html5-qrcode library (mobile-friendly)
+- Manual entry option: 8-13 digit barcode for exact product match
+- Supports EAN-13, UPC-A, EAN-8, UPC-E, Code 128, Code 39 formats
+- Direct API lookup via Open Food Facts for instant results
 - Perfect for scanning packaged products
 
 **Source Prioritization (highest to lowest):**
@@ -239,6 +241,8 @@ USDA_API_KEY=...           # Required for USDA FoodData Central
   - Create custom foods with manual nutrition entry
   - Edit and delete user-created foods
   - Source badges (USDA, Open Food Facts, Custom)
+  - **Camera barcode scanning** (mobile-friendly, uses html5-qrcode)
+  - Manual barcode entry fallback option
 - [x] Ingredient-to-food matching - link ingredients to foods from multiple sources
 - [x] Ingredient review modal - review AI-parsed ingredients with match suggestions
 - [x] Nutrition calculation per serving - calculated from matched ingredients
