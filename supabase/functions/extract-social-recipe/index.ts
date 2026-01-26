@@ -133,6 +133,11 @@ IMPORTANT INSTRUCTIONS:
    - "Instructions may be abbreviated" if steps are brief
    - "Measurements not specified" if quantities are missing
 
+7. IMPORTANT JSON FORMATTING:
+   - Use \\n for line breaks in strings (not literal newlines)
+   - Properly escape all special characters in JSON strings
+   - Ensure all strings are properly quoted and escaped
+
 Return ONLY valid JSON with this structure:
 {
   "title": "Recipe Title",
@@ -206,36 +211,64 @@ async function extractFromCaption(
   }
   jsonText = jsonText.trim()
 
-  console.log('Cleaned JSON text:', jsonText)
+  console.log('Cleaned JSON text (first 500 chars):', jsonText.substring(0, 500))
 
+  let result
   try {
-    const result = JSON.parse(jsonText)
-
-    // Validate required fields
-    if (!result.title || !result.raw_ingredients_text || !result.raw_procedure_text) {
-      console.error('Missing required fields. Result:', JSON.stringify(result))
-      throw new Error('Missing required recipe fields in extraction')
-    }
-
-    // Add default confidence if missing
-    if (!result.extraction_confidence) {
-      result.extraction_confidence = 'medium'
-    }
-
-    // Add default warnings array if missing
-    if (!result.warnings) {
-      result.warnings = []
-    }
-
-    // Add source info to warnings
-    result.warnings.unshift(`Imported from ${platform} (@${author})`)
-
-    return result
+    result = JSON.parse(jsonText)
   } catch (parseError) {
-    console.error('Failed to parse Claude response. Error:', parseError)
-    console.error('JSON text that failed to parse:', jsonText)
-    throw new Error(`Failed to parse recipe extraction result: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`)
+    // If JSON parsing fails due to control characters, try to fix them
+    if (parseError instanceof Error && parseError.message.includes('control character')) {
+      console.log('Control character detected, attempting to sanitize JSON')
+
+      try {
+        // Attempt to fix common control character issues
+        // This is a more surgical approach that preserves JSON structure
+        const sanitized = jsonText
+          .replace(/[\u0000-\u001F\u007F-\u009F]/g, (char) => {
+            // Replace control characters with their escaped equivalents
+            const code = char.charCodeAt(0)
+            if (code === 10) return '\\n'  // newline
+            if (code === 13) return '\\r'  // carriage return
+            if (code === 9) return '\\t'   // tab
+            return ''  // Remove other control characters
+          })
+
+        console.log('Sanitized JSON (first 500 chars):', sanitized.substring(0, 500))
+        result = JSON.parse(sanitized)
+        console.log('Successfully parsed after sanitization')
+      } catch (secondError) {
+        console.error('Failed to parse even after sanitization:', secondError)
+        console.error('Original JSON text:', jsonText)
+        throw new Error(`Failed to parse recipe extraction result: ${parseError.message}`)
+      }
+    } else {
+      console.error('Failed to parse Claude response. Error:', parseError)
+      console.error('JSON text that failed to parse:', jsonText)
+      throw new Error(`Failed to parse recipe extraction result: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`)
+    }
   }
+
+  // Validate required fields
+  if (!result.title || !result.raw_ingredients_text || !result.raw_procedure_text) {
+    console.error('Missing required fields. Result:', JSON.stringify(result))
+    throw new Error('Missing required recipe fields in extraction')
+  }
+
+  // Add default confidence if missing
+  if (!result.extraction_confidence) {
+    result.extraction_confidence = 'medium'
+  }
+
+  // Add default warnings array if missing
+  if (!result.warnings) {
+    result.warnings = []
+  }
+
+  // Add source info to warnings
+  result.warnings.unshift(`Imported from ${platform} (@${author})`)
+
+  return result
 }
 
 Deno.serve(async (req) => {
