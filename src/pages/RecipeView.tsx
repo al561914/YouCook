@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Clock, Edit, Trash2, Users, ChefHat, AlertCircle, Sparkles, RotateCw } from 'lucide-react'
+import { ArrowLeft, Clock, Edit, Trash2, Users, ChefHat, AlertCircle, Sparkles, RotateCw, ExternalLink, Instagram } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -121,6 +121,27 @@ export function RecipeView() {
             <h1 className="text-3xl font-bold text-gray-900">{recipe.title}</h1>
             {recipe.description && (
               <p className="mt-1 text-gray-600">{recipe.description}</p>
+            )}
+            {recipe.source_url && (
+              <div className="mt-2 flex items-center gap-2 text-sm">
+                {(recipe as any).import_metadata?.platform === 'instagram' && (
+                  <div className="flex items-center justify-center h-4 w-4 rounded bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400">
+                    <Instagram className="h-3 w-3 text-white" />
+                  </div>
+                )}
+                <a
+                  href={recipe.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
+                >
+                  View original {(recipe as any).import_metadata?.platform || 'source'}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+                {(recipe as any).import_metadata?.author && (
+                  <span className="text-gray-500">by @{(recipe as any).import_metadata.author}</span>
+                )}
+              </div>
             )}
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle, AlertTriangle } from 'lucide-react'
+import { AlertCircle, CheckCircle, AlertTriangle, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -17,6 +17,11 @@ interface ImportPreviewProps {
   onEdit: () => void
   onCancel: () => void
   loading?: boolean
+  sourceUrl?: string | null
+  thumbnailUrl?: string | null
+  thumbnailBase64?: string | null
+  thumbnailMimeType?: string | null
+  author?: string | null
 }
 
 export function ImportPreview({
@@ -33,6 +38,11 @@ export function ImportPreview({
   onEdit,
   onCancel,
   loading,
+  sourceUrl,
+  thumbnailUrl,
+  thumbnailBase64,
+  thumbnailMimeType,
+  author,
 }: ImportPreviewProps) {
   const confidenceConfig = {
     high: { color: 'bg-green-100 text-green-800 border-green-300', icon: CheckCircle, label: 'High Confidence' },
@@ -58,6 +68,39 @@ export function ImportPreview({
           {config.label}
         </Badge>
       </div>
+
+      {/* Source info and thumbnail */}
+      {(sourceUrl || thumbnailBase64 || thumbnailUrl) && (
+        <div className="flex gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          {(thumbnailBase64 || thumbnailUrl) && (
+            <div className="flex-shrink-0">
+              <img
+                src={thumbnailBase64 && thumbnailMimeType
+                  ? `data:${thumbnailMimeType};base64,${thumbnailBase64}`
+                  : thumbnailUrl || ''}
+                alt="Recipe preview"
+                className="w-24 h-24 object-cover rounded-md"
+              />
+            </div>
+          )}
+          {sourceUrl && (
+            <div className="flex-1 flex flex-col justify-center min-w-0">
+              <p className="text-sm font-medium text-gray-700 mb-1">
+                {author ? `Recipe by @${author}` : 'Original Source'}
+              </p>
+              <a
+                href={sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 truncate"
+              >
+                <span className="truncate">{sourceUrl}</span>
+                <ExternalLink className="h-3 w-3 flex-shrink-0" />
+              </a>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Warnings */}
       {warnings.length > 0 && (

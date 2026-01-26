@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { FileText, Image, Link as LinkIcon, Share2, X } from 'lucide-react'
+import { FileText, Image, Link as LinkIcon, Instagram, X } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { PDFImporter } from './PDFImporter'
 import { PhotoImporter } from './PhotoImporter'
+import { SocialImporter } from './SocialImporter'
 
 type ImportMethod = 'pdf' | 'photo' | 'url' | 'social' | null
 
@@ -133,14 +134,12 @@ export function ImportModal({ open, onClose, onRecipeExtracted }: ImportModalPro
                 size="lg"
                 className="h-auto py-4"
                 onClick={() => handleMethodSelect('social')}
-                disabled
               >
                 <div className="flex flex-col items-center gap-2">
-                  <div className="p-2 rounded-lg bg-purple-100">
-                    <Share2 className="h-6 w-6 text-purple-600" />
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-purple-100 via-pink-100 to-orange-100">
+                    <Instagram className="h-6 w-6 text-purple-600" />
                   </div>
-                  <p className="font-medium">Social</p>
-                  <span className="text-xs text-gray-500">Coming soon</span>
+                  <p className="font-medium">Instagram</p>
                 </div>
               </Button>
             </div>
@@ -151,6 +150,9 @@ export function ImportModal({ open, onClose, onRecipeExtracted }: ImportModalPro
         ) : selectedMethod === 'photo' ? (
           /* Photo Importer */
           <PhotoImporter onComplete={handleComplete} onCancel={handleBack} />
+        ) : selectedMethod === 'social' ? (
+          /* Social Importer */
+          <SocialImporter onComplete={handleComplete} onCancel={handleBack} />
         ) : (
           /* Placeholder for other methods */
           <div className="py-8 text-center text-gray-500">

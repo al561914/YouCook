@@ -136,3 +136,37 @@ export function getStoragePathFromUrl(url: string): string | null {
   const match = url.match(/\/storage\/v1\/object\/public\/recipe-media\/(.+)$/)
   return match ? match[1] : null
 }
+
+/**
+ * Uploads a base64 image to recipe media
+ * Used for importing images that were downloaded server-side
+ */
+export async function uploadBase64Image(
+  userId: string,
+  recipeId: string,
+  base64: string,
+  mimeType: string,
+  caption?: string
+): Promise<RecipeMedia> {
+  // Convert base64 to blob
+  const byteString = atob(base64)
+  const arrayBuffer = new ArrayBuffer(byteString.length)
+  const uint8Array = new Uint8Array(arrayBuffer)
+  for (let i = 0; i < byteString.length; i++) {
+    uint8Array[i] = byteString.charCodeAt(i)
+  }
+  const blob = new Blob([uint8Array], { type: mimeType })
+
+  // Determine file extension from MIME type
+  const ext = mimeType.split('/')[1]?.split(';')[0] || 'jpg'
+
+  // Create a File object
+  const filename = `instagram-${Date.now()}.${ext}`
+  const file = new File([blob], filename, { type: mimeType })
+
+  // Upload to storage
+  const { url: storageUrl } = await uploadRecipeImage(userId, recipeId, file)
+
+  // Add to recipe_media table
+  return await addRecipeMedia(recipeId, storageUrl, 'image', caption)
+}

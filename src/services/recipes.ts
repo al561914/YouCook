@@ -67,6 +67,8 @@ export async function createRecipe(recipe: {
   raw_ingredients_text?: string | null
   raw_procedure_text?: string | null
   source_type?: 'manual' | 'pdf' | 'image' | 'url' | 'social'
+  source_url?: string | null
+  import_metadata?: any
 }): Promise<Recipe> {
   const { data, error } = await supabase
     .from('recipes')

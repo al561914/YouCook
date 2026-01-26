@@ -34,7 +34,14 @@ export function useRecipes() {
     fetchRecipes()
   }, [fetchRecipes])
 
-  const createRecipe = async (data: RecipeFormData): Promise<Recipe> => {
+  const createRecipe = async (
+    data: RecipeFormData,
+    options?: {
+      source_url?: string | null
+      import_metadata?: any
+      source_type?: 'manual' | 'pdf' | 'image' | 'url' | 'social'
+    }
+  ): Promise<Recipe> => {
     if (!user) throw new Error('Not authenticated')
 
     const recipe = await recipeService.createRecipe({
@@ -48,7 +55,9 @@ export function useRecipes() {
       difficulty: data.difficulty,
       raw_ingredients_text: data.rawIngredientsText,
       raw_procedure_text: data.rawProcedureText,
-      source_type: 'manual',
+      source_type: options?.source_type || 'manual',
+      source_url: options?.source_url,
+      import_metadata: options?.import_metadata,
     })
 
     setRecipes((prev) => [recipe, ...prev])

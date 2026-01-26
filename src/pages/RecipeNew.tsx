@@ -7,25 +7,68 @@ import { ImportModal } from '@/components/import'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useCookbooks } from '@/hooks/useCookbooks'
 import { useRecipes } from '@/hooks/useRecipes'
+import { useAuthStore } from '@/stores/authStore'
+import { uploadBase64Image } from '@/services/media'
 
 export function RecipeNew() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const defaultCookbookId = searchParams.get('cookbook') || undefined
 
+  const { user } = useAuthStore()
   const { cookbooks, loading: cookbooksLoading } = useCookbooks()
   const { createRecipe } = useRecipes()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [importModalOpen, setImportModalOpen] = useState(false)
-  const [importedData, setImportedData] = useState<RecipeFormData | null>(null)
+  const [importedData, setImportedData] = useState<any>(null) // Changed to any to include thumbnail_url
 
   const handleSubmit = async (data: RecipeFormData) => {
     setSubmitting(true)
     setError(null)
 
     try {
-      const recipe = await createRecipe(data)
+      // Determine source type based on import metadata
+      let sourceType: 'manual' | 'pdf' | 'image' | 'url' | 'social' = 'manual'
+      if (importedData?.import_metadata) {
+        const method = importedData.import_metadata.method
+        if (method === 'pdf') sourceType = 'pdf'
+        else if (method === 'photo') sourceType = 'image'
+        else if (method === 'social') sourceType = 'social'
+      }
+
+      const recipe = await createRecipe(data, {
+        source_url: importedData?.source_url,
+        import_metadata: importedData?.import_metadata,
+        source_type: sourceType,
+      })
+
+      // If there's a thumbnail base64 from social import, upload it
+      console.log('Import metadata:', importedData)
+      console.log('Thumbnail base64 available:', !!importedData?.thumbnail_base64)
+      if (importedData?.thumbnail_base64 && importedData?.thumbnail_mime_type && user) {
+        console.log('Attempting to upload thumbnail, size:', importedData.thumbnail_base64.length, 'chars')
+        try {
+          const media = await uploadBase64Image(
+            user.id,
+            recipe.id,
+            importedData.thumbnail_base64,
+            importedData.thumbnail_mime_type,
+            `Imported from ${importedData.import_metadata?.platform || 'social media'}`
+          )
+          console.log('Successfully uploaded thumbnail:', media)
+        } catch (err) {
+          console.error('Failed to upload Instagram thumbnail:', err)
+          // Don't fail the whole import if thumbnail fails
+        }
+      } else {
+        console.log('No thumbnail base64 to upload:', {
+          hasBase64: !!importedData?.thumbnail_base64,
+          hasMimeType: !!importedData?.thumbnail_mime_type,
+          hasUser: !!user
+        })
+      }
+
       navigate(`/recipes/${recipe.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create recipe')
@@ -47,7 +90,15 @@ export function RecipeNew() {
       rawProcedureText: extractedRecipe.raw_procedure_text,
     }
 
-    setImportedData(formData)
+    // Store the full extracted recipe (includes thumbnail data, import_metadata, etc.)
+    setImportedData({
+      ...formData,
+      thumbnail_url: extractedRecipe.thumbnail_url,
+      thumbnail_base64: extractedRecipe.thumbnail_base64,
+      thumbnail_mime_type: extractedRecipe.thumbnail_mime_type,
+      import_metadata: extractedRecipe.import_metadata,
+      source_url: extractedRecipe.source_url,
+    })
     setImportModalOpen(false)
   }
 

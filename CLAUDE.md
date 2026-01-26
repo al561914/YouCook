@@ -24,14 +24,14 @@ src/
 │   ├── cook-mode/    # Cook Mode components (CookModeHeader, CookModeStep, CookModeNavigation,
 │   │                 #   CookModeIngredientDrawer, CookModeIngredientSidebar, CookModeExitDialog)
 │   ├── import/       # Import components (ImportModal, PDFImporter, PDFDropzone, PDFPageSelector,
-│   │                 #   PhotoImporter, PhotoDropzone, ImportPreview)
+│   │                 #   PhotoImporter, PhotoDropzone, SocialImporter, SocialInput, ImportPreview)
 │   └── foods/        # Food search/matching components (FoodSearch, BarcodeScanner, FoodCard,
 │                     #   FoodList, CustomFoodForm)
 ├── pages/            # Route pages (Dashboard, RecipeView, RecipeNew, RecipeEdit, CookMode,
 │                     #   CookbookView, CookbookList, FoodDatabase)
 ├── hooks/            # Custom React hooks (useCookbooks, useRecipes, useCookMode)
 ├── services/         # API/Supabase service functions (recipes, cookbooks, foods, media, parsing)
-│   └── import/       # Import services (pdfExtractor for PDF processing, photoExtractor for images)
+│   └── import/       # Import services (pdfExtractor, photoExtractor, socialExtractor)
 ├── stores/           # Zustand stores (authStore, uiStore, cookModeStore)
 ├── types/            # TypeScript types and database types
 └── lib/              # Utilities, constants, validators, formatQuantity for fractions
@@ -42,6 +42,7 @@ supabase/
 │   ├── parse-recipe/        # AI recipe parsing with Claude 3.5 Haiku
 │   ├── extract-pdf-recipe/  # PDF recipe extraction with Claude Vision (text + image OCR)
 │   ├── extract-photo-recipe/ # Photo/image recipe extraction with Claude Vision OCR
+│   ├── extract-social-recipe/ # Social media caption extraction (Instagram posts/reels)
 │   └── search-foods/        # Food search (USDA FoodData Central + Open Food Facts in parallel)
 └── migrations/       # Database migrations (001_initial_schema, 002_storage_bucket,
                       #   003_add_import_metadata)
@@ -234,6 +235,18 @@ USDA_API_KEY=...           # Required for USDA FoodData Central
   - Claude Vision API OCR for handwritten or printed recipes
   - Confidence scoring with quality warnings
   - Same import preview and metadata tracking as PDF
+- [x] **Instagram Import** - Import recipes from Instagram posts and reels
+  - Paste URL to Instagram post or reel
+  - Uses Instagram oembed API to fetch caption (no auth required)
+  - Claude AI extracts recipe from caption text
+  - **Language preservation** - recipes stay in original language (Spanish, French, etc.)
+  - Filters hashtags, @mentions, and promotional content
+  - **Automatic thumbnail download** - downloads and saves post image as recipe photo
+  - Server-side download bypasses CORS restrictions
+  - **Source attribution** - displays clickable Instagram link with author in recipe view
+  - Stores source_url and import_metadata with platform/author info
+  - Confidence scoring and extraction warnings
+  - Preview before saving with thumbnail and source link
 - [x] **Food Database** - Search and manage foods for nutrition tracking
   - Dual-API search: USDA FoodData Central + Open Food Facts in parallel
   - Intelligent source prioritization (Foundation > SR Legacy > OFF > Branded)
@@ -300,7 +313,7 @@ USDA_API_KEY=...           # Required for USDA FoodData Central
 
 **Import Modes:**
 - [ ] URL import - scrape recipes from websites
-- [ ] Social media import - extract recipes from social media posts
+- [ ] TikTok import - extend social import to support TikTok (same architecture as Instagram)
 
 **Other Features:**
 - [ ] Save/edit nutrition data - persist calculated nutrition to `recipe_nutrition` table
