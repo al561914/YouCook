@@ -102,7 +102,11 @@ export async function updateRecipe(id: string, updates: {
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error('updateRecipe error:', error.code, error.message, error.details, error.hint)
+    console.error('updateRecipe payload:', JSON.stringify(updates))
+    throw new Error(error.message || 'Failed to update recipe')
+  }
   return data as Recipe
 }
 

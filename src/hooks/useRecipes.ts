@@ -69,13 +69,13 @@ export function useRecipes() {
 
     if (data.title !== undefined) updates.title = data.title
     if (data.description !== undefined) updates.description = data.description || null
-    if (data.servings !== undefined) updates.servings = data.servings
-    if (data.prepTimeMinutes !== undefined) updates.prep_time_minutes = data.prepTimeMinutes
-    if (data.cookTimeMinutes !== undefined) updates.cook_time_minutes = data.cookTimeMinutes
-    if (data.difficulty !== undefined) updates.difficulty = data.difficulty
+    if (data.servings !== undefined) updates.servings = Number.isNaN(data.servings) ? 4 : data.servings
+    if (data.prepTimeMinutes !== undefined) updates.prep_time_minutes = Number.isNaN(data.prepTimeMinutes) ? null : data.prepTimeMinutes
+    if (data.cookTimeMinutes !== undefined) updates.cook_time_minutes = Number.isNaN(data.cookTimeMinutes) ? null : data.cookTimeMinutes
+    if (data.difficulty !== undefined && data.difficulty) updates.difficulty = data.difficulty
     if (data.rawIngredientsText !== undefined) updates.raw_ingredients_text = data.rawIngredientsText
     if (data.rawProcedureText !== undefined) updates.raw_procedure_text = data.rawProcedureText
-    if (data.cookbookId !== undefined) updates.cookbook_id = data.cookbookId
+    if (data.cookbookId !== undefined && data.cookbookId) updates.cookbook_id = data.cookbookId
 
     const recipe = await recipeService.updateRecipe(id, updates)
 
