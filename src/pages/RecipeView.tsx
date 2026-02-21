@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ConfirmDialog } from '@/components/common'
-import { IngredientList, NutritionSummary, ImageGallery, ImageUpload, ServingAdjuster, HeroImage, StepsList } from '@/components/recipes'
+import { IngredientList, NutritionSummary, ImageGallery, ImageUpload, ServingAdjuster, HeroImage, StepsList, TagBadge } from '@/components/recipes'
 import { useRecipe, useRecipes } from '@/hooks/useRecipes'
 import { parseRecipe } from '@/services/parsing'
 import { DIFFICULTY_LABELS, PARSING_STATUS_LABELS } from '@/lib/constants'
@@ -121,6 +121,13 @@ export function RecipeView() {
             <h1 className="text-3xl font-bold text-gray-900">{recipe.title}</h1>
             {recipe.description && (
               <p className="mt-1 text-gray-600">{recipe.description}</p>
+            )}
+            {((recipe as any).tags?.length > 0) && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {((recipe as any).tags as string[]).map((tag) => (
+                  <TagBadge key={tag} tag={tag} />
+                ))}
+              </div>
             )}
             {recipe.source_url && (
               <div className="mt-2 flex items-center gap-2 text-sm">

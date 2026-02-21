@@ -25,6 +25,7 @@ interface ExtractionResult {
   raw_procedure_text: string
   extraction_confidence: 'high' | 'medium' | 'low'
   warnings: string[]
+  tags: string[]
 }
 
 const corsHeaders = {
@@ -97,6 +98,13 @@ Extract and return:
 7. raw_procedure_text - all instructions, preserving step numbers and formatting
 8. extraction_confidence - "high", "medium", or "low" based on clarity
 9. warnings - array of any issues or ambiguities found
+10. tags - classify using these options (pick 2-6 that apply):
+    Meal type: breakfast, lunch, dinner, snack, dessert
+    Dish type: salad, soup, smoothie, bowl, pasta, rice, sandwich, stew, sauce, baked-goods
+    Protein: chicken, beef, pork, fish, seafood, eggs
+    Diet: vegetarian, vegan, gluten-free, dairy-free, low-carb, high-protein
+    Style: quick, meal-prep, one-pot, slow-cooker, air-fryer, grilling
+    Only use tags from this list.
 
 Return ONLY valid JSON matching this structure:
 {
@@ -108,7 +116,8 @@ Return ONLY valid JSON matching this structure:
   "raw_ingredients_text": "2 cups flour\\n1 tsp salt\\n...",
   "raw_procedure_text": "1. Step one\\n2. Step two\\n...",
   "extraction_confidence": "high",
-  "warnings": []
+  "warnings": [],
+  "tags": ["dinner", "chicken"]
 }
 
 If no recipe is found, return:
@@ -121,7 +130,8 @@ If no recipe is found, return:
   "raw_ingredients_text": "",
   "raw_procedure_text": "",
   "extraction_confidence": "low",
-  "warnings": ["No recipe content detected in the provided text"]
+  "warnings": ["No recipe content detected in the provided text"],
+  "tags": []
 }`
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -153,6 +163,7 @@ If no recipe is found, return:
   // Parse JSON response
   try {
     const result = JSON.parse(content)
+    if (!result.tags) result.tags = []
     return result
   } catch (e) {
     throw new Error('Failed to parse Claude response as JSON')
@@ -192,7 +203,8 @@ Return ONLY valid JSON matching this structure:
   "raw_ingredients_text": "2 cups flour\\n1 tsp salt\\n...",
   "raw_procedure_text": "1. Step one\\n2. Step two\\n...",
   "extraction_confidence": "high",
-  "warnings": []
+  "warnings": [],
+  "tags": ["dinner", "chicken"]
 }
 
 Confidence levels:
@@ -206,6 +218,14 @@ Add warnings for any issues like:
 - Poor image quality
 - Multiple recipes on same page
 
+For tags, classify using these options (pick 2-6 that apply):
+Meal type: breakfast, lunch, dinner, snack, dessert
+Dish type: salad, soup, smoothie, bowl, pasta, rice, sandwich, stew, sauce, baked-goods
+Protein: chicken, beef, pork, fish, seafood, eggs
+Diet: vegetarian, vegan, gluten-free, dairy-free, low-carb, high-protein
+Style: quick, meal-prep, one-pot, slow-cooker, air-fryer, grilling
+Only use tags from this list.
+
 If no recipe is found, return:
 {
   "title": "No Recipe Found",
@@ -216,7 +236,8 @@ If no recipe is found, return:
   "raw_ingredients_text": "",
   "raw_procedure_text": "",
   "extraction_confidence": "low",
-  "warnings": ["No recipe content detected in the images"]
+  "warnings": ["No recipe content detected in the images"],
+  "tags": []
 }`
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -254,6 +275,7 @@ If no recipe is found, return:
   // Parse JSON response
   try {
     const result = JSON.parse(content)
+    if (!result.tags) result.tags = []
     return result
   } catch (e) {
     throw new Error('Failed to parse Claude response as JSON')

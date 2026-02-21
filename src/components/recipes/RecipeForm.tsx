@@ -17,6 +17,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ImageGallery } from './ImageGallery'
 import { ImageUpload } from './ImageUpload'
 import { NutritionSummary } from './NutritionSummary'
+import { TagEditor } from './TagEditor'
 import type { Cookbook } from '@/types/cookbook'
 import type { RecipeWithRelations } from '@/types/recipe'
 
@@ -30,6 +31,7 @@ export interface RecipeFormData {
   difficulty: 'easy' | 'medium' | 'hard' | 'expert'
   rawIngredientsText: string
   rawProcedureText: string
+  tags: string[]
 }
 
 interface RecipeFormProps {
@@ -57,6 +59,7 @@ export function RecipeForm({
   const [ingredientsOpen, setIngredientsOpen] = useState(true)
   const [instructionsOpen, setInstructionsOpen] = useState(true)
   const [photosOpen, setPhotosOpen] = useState(false)
+  const [tagsOpen, setTagsOpen] = useState(true)
   const [nutritionOpen, setNutritionOpen] = useState(false)
 
   const {
@@ -77,11 +80,13 @@ export function RecipeForm({
       difficulty: 'medium',
       rawIngredientsText: '',
       rawProcedureText: '',
+      tags: [],
     },
   })
 
   const selectedDifficulty = watch('difficulty')
   const selectedCookbook = watch('cookbookId')
+  const selectedTags = watch('tags')
 
   useEffect(() => {
     if (recipe) {
@@ -95,6 +100,7 @@ export function RecipeForm({
         difficulty: recipe.difficulty,
         rawIngredientsText: recipe.raw_ingredients_text || '',
         rawProcedureText: recipe.raw_procedure_text || '',
+        tags: (recipe as any).tags || [],
       })
     } else if (importedData) {
       reset(importedData)
@@ -299,6 +305,38 @@ export function RecipeForm({
               {errors.rawProcedureText && (
                 <p className="text-sm text-red-600 mt-2">{errors.rawProcedureText.message}</p>
               )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Tags */}
+      <Collapsible open={tagsOpen} onOpenChange={setTagsOpen}>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    {tagsOpen ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                    Tags
+                    {selectedTags.length > 0 && (
+                      <span className="text-sm font-normal text-blue-600">({selectedTags.length} selected)</span>
+                    )}
+                  </CardTitle>
+                  <CardDescription>
+                    Classify your recipe for easy filtering and search
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent>
+              <TagEditor
+                value={selectedTags}
+                onChange={(tags) => setValue('tags', tags)}
+              />
             </CardContent>
           </CollapsibleContent>
         </Card>

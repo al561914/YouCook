@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { TagBadge } from '@/components/recipes/TagBadge'
 import { useCookbook } from '@/hooks/useCookbooks'
 import { DIFFICULTY_LABELS } from '@/lib/constants'
 import type { CookbookWithRecipes } from '@/types/cookbook'
@@ -28,10 +29,21 @@ export function CookbookView() {
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('recent')
   const [filterDifficulty, setFilterDifficulty] = useState<string>('all')
+  const [filterTag, setFilterTag] = useState<string>('')
 
   // Extract recipes (safe to do before early returns)
   const cookbookWithRecipes = cookbook as CookbookWithRecipes | null
   const allRecipes = cookbookWithRecipes?.recipes || []
+
+  // Collect all unique tags across recipes for the filter dropdown
+  const availableTags = useMemo(() => {
+    const tagSet = new Set<string>()
+    allRecipes.forEach((recipe) => {
+      const tags = (recipe as any).tags as string[] | undefined
+      tags?.forEach((t) => tagSet.add(t))
+    })
+    return Array.from(tagSet).sort()
+  }, [allRecipes])
 
   // Filter and sort recipes (must be called before early returns)
   const filteredAndSortedRecipes = useMemo(() => {
@@ -49,6 +61,14 @@ export function CookbookView() {
     // Difficulty filter
     if (filterDifficulty !== 'all') {
       filtered = filtered.filter((recipe) => recipe.difficulty === filterDifficulty)
+    }
+
+    // Tag filter
+    if (filterTag) {
+      filtered = filtered.filter((recipe) => {
+        const tags = (recipe as any).tags as string[] | undefined
+        return tags?.includes(filterTag)
+      })
     }
 
     // Sort
@@ -149,7 +169,22 @@ export function CookbookView() {
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Tag Filter */}
+            {availableTags.length > 0 && (
+              <Select value={filterTag || 'all'} onValueChange={(v) => setFilterTag(v === 'all' ? '' : v)}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Tag" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Tags</SelectItem>
+                  {availableTags.map((tag) => (
+                    <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
             {/* Difficulty Filter */}
             <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
               <SelectTrigger className="w-[140px]">
@@ -230,6 +265,7 @@ export function CookbookView() {
               onClick={() => {
                 setSearchQuery('')
                 setFilterDifficulty('all')
+                setFilterTag('')
               }}
             >
               Clear Filters
@@ -240,7 +276,8 @@ export function CookbookView() {
         /* Grid View */
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredAndSortedRecipes.map((recipe) => {
-            const thumbnailUrl = (recipe as { thumbnail_url?: string }).thumbnail_url
+            const thumbnailUrl = (recipe as any).thumbnail_url as string | undefined
+            const recipeTags = (recipe as any).tags as string[] | undefined
             const totalTime = (recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0)
             return (
               <Card key={recipe.id} className="hover:shadow-md transition-shadow overflow-hidden">
@@ -265,7 +302,17 @@ export function CookbookView() {
                         {recipe.description}
                       </p>
                     )}
-                    <div className="mt-3 flex items-center gap-3 text-xs text-gray-500">
+                    {recipeTags && recipeTags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {recipeTags.slice(0, 3).map((tag) => (
+                          <TagBadge key={tag} tag={tag} />
+                        ))}
+                        {recipeTags.length > 3 && (
+                          <span className="text-xs text-gray-400">+{recipeTags.length - 3}</span>
+                        )}
+                      </div>
+                    )}
+                    <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
                       <span className="capitalize">{DIFFICULTY_LABELS[recipe.difficulty]}</span>
                       {totalTime > 0 && <span>{totalTime} min</span>}
                       {recipe.servings && <span>{recipe.servings} servings</span>}
@@ -280,7 +327,8 @@ export function CookbookView() {
         /* List View */
         <div className="space-y-2">
           {filteredAndSortedRecipes.map((recipe) => {
-            const thumbnailUrl = (recipe as { thumbnail_url?: string }).thumbnail_url
+            const thumbnailUrl = (recipe as any).thumbnail_url as string | undefined
+            const recipeTags = (recipe as any).tags as string[] | undefined
             const totalTime = (recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0)
             return (
               <Card key={recipe.id} className="hover:shadow-md transition-shadow">
@@ -307,7 +355,17 @@ export function CookbookView() {
                             {recipe.description}
                           </p>
                         )}
-                        <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
+                        {recipeTags && recipeTags.length > 0 && (
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {recipeTags.slice(0, 4).map((tag) => (
+                              <TagBadge key={tag} tag={tag} />
+                            ))}
+                            {recipeTags.length > 4 && (
+                              <span className="text-xs text-gray-400">+{recipeTags.length - 4}</span>
+                            )}
+                          </div>
+                        )}
+                        <div className="mt-1.5 flex items-center gap-4 text-xs text-gray-500">
                           <span className="capitalize">{DIFFICULTY_LABELS[recipe.difficulty]}</span>
                           {totalTime > 0 && <span>{totalTime} min total</span>}
                           {recipe.servings && <span>{recipe.servings} servings</span>}

@@ -22,6 +22,7 @@ interface ExtractionResult {
   raw_procedure_text: string
   extraction_confidence: 'high' | 'medium' | 'low'
   warnings: string[]
+  tags: string[]
 }
 
 const SYSTEM_PROMPT = `You are a recipe extraction assistant. Extract recipe information from images.
@@ -31,11 +32,18 @@ IMPORTANT INSTRUCTIONS:
 2. Parse servings and times (prep time, cook time) if available
 3. For ingredients: Extract each ingredient on a new line with quantity, unit, and name
 4. For instructions: Extract step-by-step directions, numbered if possible
-5. Assess extraction confidence:
+5. Classify the recipe with tags from this list (pick all that apply):
+   Meal type: breakfast, lunch, dinner, snack, dessert
+   Dish type: salad, soup, smoothie, bowl, pasta, rice, sandwich, stew, sauce, baked-goods
+   Protein: chicken, beef, pork, fish, seafood, eggs
+   Diet: vegetarian, vegan, gluten-free, dairy-free, low-carb, high-protein
+   Style: quick, meal-prep, one-pot, slow-cooker, air-fryer, grilling
+   Return 2-6 tags maximum. Only use tags from this list.
+6. Assess extraction confidence:
    - HIGH: Clear, well-formatted recipe with all details visible
    - MEDIUM: Recipe readable but some details unclear or missing
    - LOW: Recipe partially visible, handwritten, or poor image quality
-6. Note any warnings (e.g., "Image quality poor", "Ingredients partially visible", "Handwritten recipe")
+7. Note any warnings (e.g., "Image quality poor", "Ingredients partially visible", "Handwritten recipe")
 
 Return ONLY valid JSON with this structure:
 {
@@ -47,7 +55,8 @@ Return ONLY valid JSON with this structure:
   "raw_ingredients_text": "ingredient 1\\ningredient 2\\n...",
   "raw_procedure_text": "step 1\\nstep 2\\n...",
   "extraction_confidence": "high" | "medium" | "low",
-  "warnings": ["warning1", "warning2"]
+  "warnings": ["warning1", "warning2"],
+  "tags": ["dinner", "chicken", "quick"]
 }`
 
 async function extractFromImage(image: PhotoImage, fileName: string): Promise<ExtractionResult> {
@@ -120,6 +129,11 @@ async function extractFromImage(image: PhotoImage, fileName: string): Promise<Ex
     // Add default warnings array if missing
     if (!result.warnings) {
       result.warnings = []
+    }
+
+    // Add default tags array if missing
+    if (!result.tags) {
+      result.tags = []
     }
 
     // Add source info to warnings

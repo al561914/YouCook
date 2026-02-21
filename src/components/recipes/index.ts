@@ -1,4 +1,6 @@
 export { RecipeForm } from './RecipeForm'
+export { TagBadge } from './TagBadge'
+export { TagEditor } from './TagEditor'
 export { IngredientList } from './IngredientList'
 export { NutritionSummary } from './NutritionSummary'
 export { ImageUpload } from './ImageUpload'

@@ -23,6 +23,7 @@ export interface RecipeWithRelations extends Recipe {
   steps?: RecipeStep[]
   nutrition?: RecipeNutrition
   media?: RecipeMedia[]
+  tags?: string[]
 }
 
 export interface ParsedIngredient {

@@ -55,6 +55,7 @@ export function useRecipes() {
       difficulty: data.difficulty,
       raw_ingredients_text: data.rawIngredientsText,
       raw_procedure_text: data.rawProcedureText,
+      tags: data.tags || [],
       source_type: options?.source_type || 'manual',
       source_url: options?.source_url,
       import_metadata: options?.import_metadata,
@@ -76,6 +77,7 @@ export function useRecipes() {
     if (data.rawIngredientsText !== undefined) updates.raw_ingredients_text = data.rawIngredientsText
     if (data.rawProcedureText !== undefined) updates.raw_procedure_text = data.rawProcedureText
     if (data.cookbookId !== undefined && data.cookbookId) updates.cookbook_id = data.cookbookId
+    if (data.tags !== undefined) updates.tags = data.tags
 
     const recipe = await recipeService.updateRecipe(id, updates)
 

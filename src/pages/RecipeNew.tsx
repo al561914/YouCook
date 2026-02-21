@@ -88,6 +88,7 @@ export function RecipeNew() {
       difficulty: 'medium', // Default difficulty
       rawIngredientsText: extractedRecipe.raw_ingredients_text,
       rawProcedureText: extractedRecipe.raw_procedure_text,
+      tags: extractedRecipe.tags || [],
     }
 
     // Store the full extracted recipe (includes thumbnail data, import_metadata, etc.)

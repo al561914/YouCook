@@ -24,6 +24,21 @@ export const PARSING_STATUS_LABELS = {
   failed: 'Failed',
 } as const
 
+export const RECIPE_TAGS = [
+  // Meal type
+  'breakfast', 'lunch', 'dinner', 'snack', 'dessert',
+  // Dish type
+  'salad', 'soup', 'smoothie', 'bowl', 'pasta', 'rice', 'sandwich', 'stew', 'sauce', 'baked-goods',
+  // Protein
+  'chicken', 'beef', 'pork', 'fish', 'seafood', 'eggs',
+  // Diet
+  'vegetarian', 'vegan', 'gluten-free', 'dairy-free', 'low-carb', 'high-protein',
+  // Style
+  'quick', 'meal-prep', 'one-pot', 'slow-cooker', 'air-fryer', 'grilling',
+] as const
+
+export type RecipeTag = typeof RECIPE_TAGS[number]
+
 export const STANDARD_UNITS = [
   'cup',
   'tbsp',

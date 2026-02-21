@@ -69,6 +69,7 @@ export async function createRecipe(recipe: {
   source_type?: 'manual' | 'pdf' | 'image' | 'url' | 'social'
   source_url?: string | null
   import_metadata?: any
+  tags?: string[]
 }): Promise<Recipe> {
   const { data, error } = await supabase
     .from('recipes')
@@ -94,6 +95,7 @@ export async function updateRecipe(id: string, updates: {
   raw_procedure_text?: string | null
   parsing_status?: 'pending' | 'parsing' | 'parsed' | 'review_needed' | 'failed'
   cookbook_id?: string
+  tags?: string[]
 }): Promise<Recipe> {
   const { data, error } = await supabase
     .from('recipes')

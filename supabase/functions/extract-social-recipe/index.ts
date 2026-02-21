@@ -22,6 +22,7 @@ interface ExtractionResult {
   raw_procedure_text: string
   extraction_confidence: 'high' | 'medium' | 'low'
   warnings: string[]
+  tags: string[]
   author: string
   thumbnail_url: string | null
   thumbnail_base64: string | null
@@ -123,17 +124,25 @@ IMPORTANT INSTRUCTIONS:
    - Decorative emojis (keep measurement-related ones)
    - Calls to action ("Follow for more", "Double tap", etc.)
 
-5. Assess extraction confidence:
+5. Classify the recipe with tags from this list (pick all that apply):
+   Meal type: breakfast, lunch, dinner, snack, dessert
+   Dish type: salad, soup, smoothie, bowl, pasta, rice, sandwich, stew, sauce, baked-goods
+   Protein: chicken, beef, pork, fish, seafood, eggs
+   Diet: vegetarian, vegan, gluten-free, dairy-free, low-carb, high-protein
+   Style: quick, meal-prep, one-pot, slow-cooker, air-fryer, grilling
+   Return 2-6 tags maximum. Only use tags from this list.
+
+6. Assess extraction confidence:
    - HIGH: Clear recipe with complete ingredients and instructions
    - MEDIUM: Recipe present but some details unclear or minimal
    - LOW: Partial recipe, missing ingredients or instructions
 
-6. Add warnings for any issues:
+7. Add warnings for any issues:
    - "Incomplete ingredient list" if ingredients seem partial
    - "Instructions may be abbreviated" if steps are brief
    - "Measurements not specified" if quantities are missing
 
-7. IMPORTANT JSON FORMATTING:
+8. IMPORTANT JSON FORMATTING:
    - Use \\n for line breaks in strings (not literal newlines)
    - Properly escape all special characters in JSON strings
    - Ensure all strings are properly quoted and escaped
@@ -148,7 +157,8 @@ Return ONLY valid JSON with this structure:
   "raw_ingredients_text": "1 cup flour\\n2 eggs\\n...",
   "raw_procedure_text": "1. First step\\n2. Second step\\n...",
   "extraction_confidence": "high",
-  "warnings": []
+  "warnings": [],
+  "tags": ["dinner", "chicken", "quick"]
 }`
 }
 
@@ -263,6 +273,11 @@ async function extractFromCaption(
   // Add default warnings array if missing
   if (!result.warnings) {
     result.warnings = []
+  }
+
+  // Add default tags array if missing
+  if (!result.tags) {
+    result.tags = []
   }
 
   // Add source info to warnings

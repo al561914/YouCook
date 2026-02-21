@@ -114,7 +114,7 @@ def import_recipe(url, user_id, cookbook_id, original_username, date_added):
             }
         )
 
-        extraction_data = json.loads(result.data)
+        extraction_data = json.loads(result.data if hasattr(result, 'data') else result)
 
         print(f"    ✅ Extracted: {extraction_data.get('title', 'Untitled')}")
 
@@ -131,6 +131,7 @@ def import_recipe(url, user_id, cookbook_id, original_username, date_added):
             'raw_ingredients_text': extraction_data['raw_ingredients_text'],
             'raw_procedure_text': extraction_data['raw_procedure_text'],
             'parsing_status': 'pending',
+            'tags': extraction_data.get('tags', []),
             'source_type': 'social',
             'source_url': url,
             'import_metadata': {
