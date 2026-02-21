@@ -1,0 +1,34 @@
+SETUP INSTRUCTIONS
+==================
+
+1. Install Python dependencies:
+
+   pip install anthropic requests python-dotenv supabase
+
+2. Create your .env file:
+
+   copy .env.example .env
+
+   (On Mac/Linux: cp .env.example .env)
+
+3. Edit .env and add your keys:
+
+   Open .env in a text editor and add:
+
+   a) Anthropic API key from:
+      https://console.anthropic.com/settings/keys
+
+   b) Supabase credentials from:
+      Supabase Dashboard → Settings → API
+      - Copy the URL
+      - Copy the service_role key (NOT anon key)
+
+4. You're ready to run the scripts!
+
+   Classification:
+   python classify_sample.py
+
+   Bulk Import (after classification):
+   python bulk_import.py
+
+The .env file is git-ignored, so your secrets won't be committed.
