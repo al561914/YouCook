@@ -80,7 +80,10 @@ export async function createRecipe(recipe: {
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error('createRecipe error:', error.code, error.message, error.details, error.hint)
+    throw error
+  }
   return data as Recipe
 }
 

@@ -44,6 +44,8 @@ export function useRecipes() {
   ): Promise<Recipe> => {
     if (!user) throw new Error('Not authenticated')
 
+    if (!data.cookbookId) throw new Error('Please select a cookbook')
+
     const recipe = await recipeService.createRecipe({
       user_id: user.id,
       cookbook_id: data.cookbookId,
