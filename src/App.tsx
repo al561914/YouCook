@@ -17,6 +17,7 @@ import {
   CookbookView,
   FoodDatabase,
   Settings,
+  NutritionLog,
 } from '@/pages'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -126,6 +127,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/nutrition-log"
+              element={
+                <ProtectedRoute>
+                  <NutritionLog />
                 </ProtectedRoute>
               }
             />

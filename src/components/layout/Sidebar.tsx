@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
-import { BookOpen, ChefHat, Database, Home, Settings, X, ChevronDown, ChevronRight, Plus } from 'lucide-react'
+import { BookOpen, ChefHat, Database, Home, Settings, X, ChevronDown, ChevronRight, Plus, UtensilsCrossed } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -14,6 +14,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: ChefHat, requiresAuth: true },
   { name: 'Cookbooks', href: '/cookbooks', icon: BookOpen, requiresAuth: true },
   { name: 'Food Database', href: '/foods', icon: Database },
+  { name: 'Nutrition Log', href: '/nutrition-log', icon: UtensilsCrossed, requiresAuth: true },
   { name: 'Settings', href: '/settings', icon: Settings, requiresAuth: true },
 ]
 

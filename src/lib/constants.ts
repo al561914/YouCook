@@ -39,6 +39,11 @@ export const RECIPE_TAGS = [
 
 export type RecipeTag = typeof RECIPE_TAGS[number]
 
+export const MEAL_NAMES = [
+  'Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner', 'Workout', 'Bedtime',
+] as const
+export type MealName = typeof MEAL_NAMES[number]
+
 export const STANDARD_UNITS = [
   'cup',
   'tbsp',
