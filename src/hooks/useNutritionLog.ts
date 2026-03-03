@@ -17,13 +17,16 @@ import type {
 } from '@/types/nutritionLog'
 import type { FoodSearchResult } from '@/types/food'
 
+// Nutrients in the DB are stored per-serving (1 serving = servingSize grams).
+// For USDA Foundation/SR Legacy servingSize=100 so per-serving = per-100g.
+// For branded/packaged foods servingSize is the actual portion (e.g. 150g).
+// quantity is always in servings, so: total = quantity × nutrients_per_serving.
 export function scaleNutrients(food: FoodSearchResult, quantity: number) {
-  const grams = quantity * (food.servingSize ?? 100)
   return {
-    calories: (grams / 100) * (food.nutrients.calories ?? 0),
-    protein_g: (grams / 100) * (food.nutrients.protein_g ?? 0),
-    carbs_g: (grams / 100) * (food.nutrients.carbs_g ?? 0),
-    fat_g: (grams / 100) * (food.nutrients.fat_g ?? 0),
+    calories: quantity * (food.nutrients.calories ?? 0),
+    protein_g: quantity * (food.nutrients.protein_g ?? 0),
+    carbs_g: quantity * (food.nutrients.carbs_g ?? 0),
+    fat_g: quantity * (food.nutrients.fat_g ?? 0),
   }
 }
 

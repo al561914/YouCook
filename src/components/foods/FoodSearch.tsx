@@ -107,7 +107,11 @@ export function FoodSearch({ initialQuery = '', localOnly = false, onSelect, onC
                   {food.nutrients.calories !== null && (
                     <p className="font-medium">{Math.round(food.nutrients.calories)} cal</p>
                   )}
-                  <p className="text-xs text-gray-500">per 100g</p>
+                  <p className="text-xs text-gray-500">
+                    {food.servingSize && food.servingSize !== 100
+                      ? `per ${food.servingSize}${food.servingUnit ?? 'g'} serving`
+                      : 'per 100g'}
+                  </p>
                 </div>
               </div>
               <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
