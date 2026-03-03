@@ -11,7 +11,7 @@ import { FoodSearch } from '@/components/foods/FoodSearch'
 import { scaleNutrients } from '@/hooks/useNutritionLog'
 import type { FoodSearchResult } from '@/types/food'
 
-type UnitMode = 'serving' | 'g'
+type UnitMode = 'serving' | 'unit'
 
 interface AddFoodDialogProps {
   mealName: string
@@ -61,10 +61,12 @@ export function AddFoodDialog({ mealName, open, onOpenChange, onAdded }: AddFood
     onOpenChange(false)
   }
 
+  const servingUnit = selectedFood?.servingUnit ?? 'g'
+
   const handleUnitSwitch = (newUnit: UnitMode) => {
     if (newUnit === unit || servingSize === null) return
     const current = parseFloat(quantity) || 1
-    if (newUnit === 'g') {
+    if (newUnit === 'unit') {
       setQuantity(Math.round(current * servingSize).toString())
     } else {
       setQuantity(formatServings(current / servingSize))
@@ -73,13 +75,13 @@ export function AddFoodDialog({ mealName, open, onOpenChange, onAdded }: AddFood
   }
 
   const qty = parseFloat(quantity) || 0
-  const servingsForCalc = unit === 'serving' ? qty : (servingSize ? qty / servingSize : qty / 100)
+  const servingsForCalc = unit === 'serving' ? qty : (servingSize ? qty / servingSize : qty)
   const preview = selectedFood && qty > 0 ? scaleNutrients(selectedFood, servingsForCalc) : null
 
   // Equivalent label shown next to the input
   const equivalent = servingSize
     ? unit === 'serving'
-      ? `= ${Math.round(qty * servingSize)}g`
+      ? `= ${Math.round(qty * servingSize)}${servingUnit}`
       : `= ${formatServings(qty / servingSize)} serving${qty / servingSize !== 1 ? 's' : ''}`
     : null
 
@@ -95,7 +97,7 @@ export function AddFoodDialog({ mealName, open, onOpenChange, onAdded }: AddFood
         food_id: selectedFood.id,
         display_name: selectedFood.name + (selectedFood.brand ? ` (${selectedFood.brand})` : ''),
         quantity: qty,
-        unit,
+        unit: unit === 'serving' ? 'serving' : servingUnit,
         calories: preview.calories,
         protein_g: preview.protein_g,
         carbs_g: preview.carbs_g,
@@ -138,7 +140,7 @@ export function AddFoodDialog({ mealName, open, onOpenChange, onAdded }: AddFood
                 <Input
                   type="number"
                   min={0.1}
-                  step={unit === 'g' ? 1 : 0.25}
+                  step={unit === 'serving' ? 0.25 : 1}
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
                   className="w-24"
@@ -161,14 +163,14 @@ export function AddFoodDialog({ mealName, open, onOpenChange, onAdded }: AddFood
                   {servingSize !== null && (
                     <button
                       type="button"
-                      onClick={() => handleUnitSwitch('g')}
+                      onClick={() => handleUnitSwitch('unit')}
                       className={`px-3 py-1.5 border-l border-gray-200 transition-colors ${
-                        unit === 'g'
+                        unit === 'unit'
                           ? 'bg-gray-900 text-white'
                           : 'bg-white text-gray-600 hover:bg-gray-50'
                       }`}
                     >
-                      g
+                      {servingUnit}
                     </button>
                   )}
                 </div>
