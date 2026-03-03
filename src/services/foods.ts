@@ -11,17 +11,19 @@ interface SearchFoodsResponse {
  * Search local foods database by name
  */
 export async function searchLocalFoods(query: string, limit: number = 20): Promise<FoodSearchResult[]> {
-  const normalizedQuery = query.toLowerCase().trim()
+  const words = query.toLowerCase().trim().split(/\s+/).filter(Boolean)
+  if (words.length === 0) return []
 
-  const { data, error } = await supabase
+  // Chain one .or() per word so all words must match (AND across words, OR across name/brand per word)
+  let q = supabase
     .from('foods')
-    .select(`
-      *,
-      food_nutrients (*)
-    `)
-    .ilike('name_normalized', `%${normalizedQuery}%`)
-    .order('name')
-    .limit(limit)
+    .select(`*, food_nutrients (*)`)
+
+  for (const word of words) {
+    q = q.or(`name_normalized.ilike.%${word}%,brand.ilike.%${word}%`) as typeof q
+  }
+
+  const { data, error } = await q.order('name').limit(limit)
 
   if (error) throw error
 

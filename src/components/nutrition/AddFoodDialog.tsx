@@ -87,6 +87,7 @@ export function AddFoodDialog({ mealName, open, onOpenChange, onAdded }: AddFood
           <FoodSearch
             onSelect={handleFoodSelect}
             onCancel={handleClose}
+            localOnly
           />
         ) : (
           <div className="space-y-4">

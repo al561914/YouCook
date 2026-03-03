@@ -3,16 +3,17 @@ import { Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { searchFoods } from '@/services/foods'
+import { searchFoods, searchLocalFoods } from '@/services/foods'
 import type { FoodSearchResult } from '@/types/food'
 
 interface FoodSearchProps {
   initialQuery?: string
+  localOnly?: boolean
   onSelect: (food: FoodSearchResult) => void
   onCancel: () => void
 }
 
-export function FoodSearch({ initialQuery = '', onSelect, onCancel }: FoodSearchProps) {
+export function FoodSearch({ initialQuery = '', localOnly = false, onSelect, onCancel }: FoodSearchProps) {
   const [query, setQuery] = useState(initialQuery)
   const [results, setResults] = useState<FoodSearchResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -26,15 +27,20 @@ export function FoodSearch({ initialQuery = '', onSelect, onCancel }: FoodSearch
     setError(null)
 
     try {
-      const response = await searchFoods(query, 15)
-      setResults(response.foods)
+      if (localOnly) {
+        const foods = await searchLocalFoods(query, 20)
+        setResults(foods)
+      } else {
+        const response = await searchFoods(query, 15)
+        setResults(response.foods)
+      }
       setHasSearched(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed')
     } finally {
       setLoading(false)
     }
-  }, [query])
+  }, [query, localOnly])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -92,19 +98,19 @@ export function FoodSearch({ initialQuery = '', onSelect, onCancel }: FoodSearch
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 truncate">{food.name}</p>
+                  <p className="font-medium text-gray-900 line-clamp-2 break-words">{food.name}</p>
                   {food.brand && (
-                    <p className="text-sm text-gray-500 truncate">{food.brand}</p>
+                    <p className="text-sm text-gray-500 line-clamp-1">{food.brand}</p>
                   )}
                 </div>
-                <div className="flex-shrink-0 text-right text-sm">
+                <div className="flex-shrink-0 text-right text-sm ml-2">
                   {food.nutrients.calories !== null && (
                     <p className="font-medium">{Math.round(food.nutrients.calories)} cal</p>
                   )}
                   <p className="text-xs text-gray-500">per 100g</p>
                 </div>
               </div>
-              <div className="mt-1 flex gap-3 text-xs text-gray-500">
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
                 {food.nutrients.protein_g !== null && (
                   <span>P: {food.nutrients.protein_g.toFixed(1)}g</span>
                 )}
