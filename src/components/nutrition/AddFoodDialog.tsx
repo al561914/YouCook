@@ -11,6 +11,8 @@ import { FoodSearch } from '@/components/foods/FoodSearch'
 import { scaleNutrients } from '@/hooks/useNutritionLog'
 import type { FoodSearchResult } from '@/types/food'
 
+type UnitMode = 'serving' | 'g'
+
 interface AddFoodDialogProps {
   mealName: string
   open: boolean
@@ -28,14 +30,24 @@ interface AddFoodDialogProps {
   }) => Promise<void>
 }
 
+function formatServings(n: number): string {
+  if (n === 0) return '0'
+  const fixed = parseFloat(n.toFixed(2))
+  return fixed % 1 === 0 ? fixed.toString() : fixed.toString()
+}
+
 export function AddFoodDialog({ mealName, open, onOpenChange, onAdded }: AddFoodDialogProps) {
   const [selectedFood, setSelectedFood] = useState<FoodSearchResult | null>(null)
   const [quantity, setQuantity] = useState('1')
+  const [unit, setUnit] = useState<UnitMode>('serving')
   const [adding, setAdding] = useState(false)
+
+  const servingSize = selectedFood?.servingSize ?? null
 
   const handleFoodSelect = (food: FoodSearchResult) => {
     setSelectedFood(food)
     setQuantity('1')
+    setUnit('serving')
   }
 
   const handleCancel = () => {
@@ -45,25 +57,45 @@ export function AddFoodDialog({ mealName, open, onOpenChange, onAdded }: AddFood
   const handleClose = () => {
     setSelectedFood(null)
     setQuantity('1')
+    setUnit('serving')
     onOpenChange(false)
   }
 
-  const qty = parseFloat(quantity) || 1
-  const preview = selectedFood ? scaleNutrients(selectedFood, qty) : null
+  const handleUnitSwitch = (newUnit: UnitMode) => {
+    if (newUnit === unit || servingSize === null) return
+    const current = parseFloat(quantity) || 1
+    if (newUnit === 'g') {
+      setQuantity(Math.round(current * servingSize).toString())
+    } else {
+      setQuantity(formatServings(current / servingSize))
+    }
+    setUnit(newUnit)
+  }
+
+  const qty = parseFloat(quantity) || 0
+  const servingsForCalc = unit === 'serving' ? qty : (servingSize ? qty / servingSize : qty / 100)
+  const preview = selectedFood && qty > 0 ? scaleNutrients(selectedFood, servingsForCalc) : null
+
+  // Equivalent label shown next to the input
+  const equivalent = servingSize
+    ? unit === 'serving'
+      ? `= ${Math.round(qty * servingSize)}g`
+      : `= ${formatServings(qty / servingSize)} serving${qty / servingSize !== 1 ? 's' : ''}`
+    : null
 
   const servingLabel = selectedFood
-    ? selectedFood.servingDescription ?? `${selectedFood.servingSize ?? 100}${selectedFood.servingUnit ?? 'g'}`
+    ? selectedFood.servingDescription ?? `${servingSize ?? 100}${selectedFood.servingUnit ?? 'g'}`
     : ''
 
   const handleAdd = async () => {
-    if (!selectedFood || !preview) return
+    if (!selectedFood || !preview || qty <= 0) return
     setAdding(true)
     try {
       await onAdded({
         food_id: selectedFood.id,
         display_name: selectedFood.name + (selectedFood.brand ? ` (${selectedFood.brand})` : ''),
         quantity: qty,
-        unit: 'serving',
+        unit,
         calories: preview.calories,
         protein_g: preview.protein_g,
         carbs_g: preview.carbs_g,
@@ -91,28 +123,63 @@ export function AddFoodDialog({ mealName, open, onOpenChange, onAdded }: AddFood
           />
         ) : (
           <div className="space-y-4">
+            {/* Food info */}
             <div>
               <p className="font-medium text-gray-900">{selectedFood.name}</p>
               {selectedFood.brand && (
                 <p className="text-sm text-gray-500">{selectedFood.brand}</p>
               )}
-              <p className="text-xs text-gray-400 mt-0.5">{servingLabel} per serving</p>
+              <p className="text-xs text-gray-400 mt-0.5">1 serving = {servingLabel}</p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <label className="text-sm font-medium text-gray-700 w-20">Quantity</label>
-              <Input
-                type="number"
-                min={0.1}
-                step={0.1}
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                className="w-24"
-                autoFocus
-              />
-              <span className="text-sm text-gray-500">serving(s)</span>
+            {/* Quantity + unit toggle */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={0.1}
+                  step={unit === 'g' ? 1 : 0.25}
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  className="w-24"
+                  autoFocus
+                />
+
+                {/* Segmented toggle: only show 'g' option when servingSize is known */}
+                <div className="flex rounded-md border border-gray-200 overflow-hidden text-sm">
+                  <button
+                    type="button"
+                    onClick={() => handleUnitSwitch('serving')}
+                    className={`px-3 py-1.5 transition-colors ${
+                      unit === 'serving'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    serving
+                  </button>
+                  {servingSize !== null && (
+                    <button
+                      type="button"
+                      onClick={() => handleUnitSwitch('g')}
+                      className={`px-3 py-1.5 border-l border-gray-200 transition-colors ${
+                        unit === 'g'
+                          ? 'bg-gray-900 text-white'
+                          : 'bg-white text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      g
+                    </button>
+                  )}
+                </div>
+
+                {equivalent && (
+                  <span className="text-sm text-gray-400">{equivalent}</span>
+                )}
+              </div>
             </div>
 
+            {/* Macro preview */}
             {preview && (
               <div className="bg-gray-50 rounded-lg p-3 grid grid-cols-4 gap-2 text-center text-sm">
                 <div>
@@ -136,7 +203,7 @@ export function AddFoodDialog({ mealName, open, onOpenChange, onAdded }: AddFood
 
             <div className="flex justify-between">
               <Button variant="outline" onClick={handleCancel}>Back</Button>
-              <Button onClick={handleAdd} disabled={adding}>
+              <Button onClick={handleAdd} disabled={adding || qty <= 0}>
                 {adding ? 'Adding...' : 'Add to Log'}
               </Button>
             </div>
