@@ -241,17 +241,20 @@ async function searchUSDA(query: string, pageSize: number, apiKey: string): Prom
     let nutrients
 
     if (hasLabelNutrients && food.servingSize) {
-      // Use label nutrients (actual label values) with product's serving size
+      // Use label nutrients (actual label values) with product's serving size.
+      // labelNutrients values are per-serving, but scaleNutrients() expects per-100g,
+      // so normalize: per_100g = per_serving / serving_size_g * 100
       servingSize = food.servingSize
       servingUnit = food.servingSizeUnit || 'g'
+      const f = 100 / food.servingSize
       nutrients = {
-        calories: food.labelNutrients!.calories?.value || null,
-        protein_g: food.labelNutrients!.protein?.value || null,
-        carbs_g: food.labelNutrients!.carbohydrates?.value || null,
-        fat_g: food.labelNutrients!.fat?.value || null,
-        fiber_g: food.labelNutrients!.fiber?.value || null,
-        sugar_g: food.labelNutrients!.sugars?.value || null,
-        sodium_mg: food.labelNutrients!.sodium?.value || null,
+        calories: food.labelNutrients!.calories?.value != null ? food.labelNutrients!.calories.value * f : null,
+        protein_g: food.labelNutrients!.protein?.value != null ? food.labelNutrients!.protein.value * f : null,
+        carbs_g: food.labelNutrients!.carbohydrates?.value != null ? food.labelNutrients!.carbohydrates.value * f : null,
+        fat_g: food.labelNutrients!.fat?.value != null ? food.labelNutrients!.fat.value * f : null,
+        fiber_g: food.labelNutrients!.fiber?.value != null ? food.labelNutrients!.fiber.value * f : null,
+        sugar_g: food.labelNutrients!.sugars?.value != null ? food.labelNutrients!.sugars.value * f : null,
+        sodium_mg: food.labelNutrients!.sodium?.value != null ? food.labelNutrients!.sodium.value * f : null,
       }
     } else {
       // No labelNutrients: USDA's per-serving calculations are often wrong
@@ -335,6 +338,12 @@ async function searchOpenFoodFacts(query: string, pageSize: number): Promise<Foo
     }
     // Otherwise keep default 100g to match _100g nutrition data
 
+    // OFF _serving values are per-serving; normalize to per-100g so scaleNutrients() is correct.
+    // _100g values are already per-100g. When hasServingData is false, servingSize=100 so f=1 (no-op).
+    const f = hasServingData && servingSize > 0 ? 100 / servingSize : 1
+    const offNutrient = (serving: number | undefined, per100g: number | undefined) =>
+      hasServingData && serving != null ? serving * f : (per100g ?? null)
+
     return [{
       id: `off-${product.code || query}`,
       name: product.product_name || 'Unknown Product',
@@ -345,14 +354,15 @@ async function searchOpenFoodFacts(query: string, pageSize: number): Promise<Foo
       servingUnit,
       servingDescription: hasServingData ? (product.serving_size || null) : null,
       nutrients: {
-        calories: nutriments['energy-kcal_serving'] || nutriments['energy-kcal_100g'] || null,
-        protein_g: nutriments['proteins_serving'] || nutriments['proteins_100g'] || null,
-        carbs_g: nutriments['carbohydrates_serving'] || nutriments['carbohydrates_100g'] || null,
-        fat_g: nutriments['fat_serving'] || nutriments['fat_100g'] || null,
-        fiber_g: nutriments['fiber_serving'] || nutriments['fiber_100g'] || null,
-        sugar_g: nutriments['sugars_serving'] || nutriments['sugars_100g'] || null,
-        sodium_mg: nutriments['sodium_serving'] ? nutriments['sodium_serving'] * 1000 :
-                   nutriments['sodium_100g'] ? nutriments['sodium_100g'] * 1000 : null,
+        calories: offNutrient(nutriments['energy-kcal_serving'], nutriments['energy-kcal_100g']),
+        protein_g: offNutrient(nutriments['proteins_serving'], nutriments['proteins_100g']),
+        carbs_g: offNutrient(nutriments['carbohydrates_serving'], nutriments['carbohydrates_100g']),
+        fat_g: offNutrient(nutriments['fat_serving'], nutriments['fat_100g']),
+        fiber_g: offNutrient(nutriments['fiber_serving'], nutriments['fiber_100g']),
+        sugar_g: offNutrient(nutriments['sugars_serving'], nutriments['sugars_100g']),
+        sodium_mg: hasServingData && nutriments['sodium_serving'] != null
+          ? nutriments['sodium_serving'] * f * 1000
+          : (nutriments['sodium_100g'] != null ? nutriments['sodium_100g'] * 1000 : null),
       },
     }]
   }
@@ -403,6 +413,11 @@ async function searchOpenFoodFacts(query: string, pageSize: number): Promise<Foo
       }
       // Otherwise keep default 100g to match _100g nutrition data
 
+      // Normalize per-serving values to per-100g (same as barcode path above)
+      const f2 = hasServingData && servingSize > 0 ? 100 / servingSize : 1
+      const offN = (serving: number | undefined, per100g: number | undefined) =>
+        hasServingData && serving != null ? serving * f2 : (per100g ?? null)
+
       return {
         id: `off-${product.code}`,
         name: product.product_name || 'Unknown Product',
@@ -413,14 +428,15 @@ async function searchOpenFoodFacts(query: string, pageSize: number): Promise<Foo
         servingUnit,
         servingDescription: hasServingData ? (product.serving_size || null) : null,
         nutrients: {
-          calories: nutriments['energy-kcal_serving'] || nutriments['energy-kcal_100g'] || null,
-          protein_g: nutriments['proteins_serving'] || nutriments['proteins_100g'] || null,
-          carbs_g: nutriments['carbohydrates_serving'] || nutriments['carbohydrates_100g'] || null,
-          fat_g: nutriments['fat_serving'] || nutriments['fat_100g'] || null,
-          fiber_g: nutriments['fiber_serving'] || nutriments['fiber_100g'] || null,
-          sugar_g: nutriments['sugars_serving'] || nutriments['sugars_100g'] || null,
-          sodium_mg: nutriments['sodium_serving'] ? nutriments['sodium_serving'] * 1000 :
-                     nutriments['sodium_100g'] ? nutriments['sodium_100g'] * 1000 : null, // Convert g to mg
+          calories: offN(nutriments['energy-kcal_serving'], nutriments['energy-kcal_100g']),
+          protein_g: offN(nutriments['proteins_serving'], nutriments['proteins_100g']),
+          carbs_g: offN(nutriments['carbohydrates_serving'], nutriments['carbohydrates_100g']),
+          fat_g: offN(nutriments['fat_serving'], nutriments['fat_100g']),
+          fiber_g: offN(nutriments['fiber_serving'], nutriments['fiber_100g']),
+          sugar_g: offN(nutriments['sugars_serving'], nutriments['sugars_100g']),
+          sodium_mg: hasServingData && nutriments['sodium_serving'] != null
+            ? nutriments['sodium_serving'] * f2 * 1000
+            : (nutriments['sodium_100g'] != null ? nutriments['sodium_100g'] * 1000 : null),
         },
       }
     })
