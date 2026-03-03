@@ -123,6 +123,7 @@ export function FoodDatabase() {
           brand: data.brand,
           servingSize: data.servingSize,
           servingUnit: data.servingUnit,
+          servingDescription: data.servingDescription,
           nutrients: {
             calories: data.calories,
             protein_g: data.protein_g,
@@ -144,6 +145,7 @@ export function FoodDatabase() {
           brand: data.brand,
           servingSize: data.servingSize,
           servingUnit: data.servingUnit,
+          servingDescription: data.servingDescription,
           nutrients: {
             calories: data.calories,
             protein_g: data.protein_g,

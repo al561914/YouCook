@@ -259,6 +259,7 @@ export async function createCustomFood(
     brand?: string
     servingSize?: number
     servingUnit?: string
+    servingDescription?: string
     nutrients: {
       calories?: number
       protein_g?: number
@@ -282,6 +283,7 @@ export async function createCustomFood(
       external_id: null,
       serving_size: foodData.servingSize || null,
       serving_unit: foodData.servingUnit || null,
+      serving_description: foodData.servingDescription || null,
     } as never)
     .select()
     .single()
@@ -323,6 +325,7 @@ export async function updateCustomFood(
     brand?: string
     servingSize?: number
     servingUnit?: string
+    servingDescription?: string
     nutrients?: {
       calories?: number
       protein_g?: number
@@ -353,6 +356,7 @@ export async function updateCustomFood(
   if (foodData.brand !== undefined) foodUpdate.brand = foodData.brand
   if (foodData.servingSize !== undefined) foodUpdate.serving_size = foodData.servingSize
   if (foodData.servingUnit !== undefined) foodUpdate.serving_unit = foodData.servingUnit
+  if (foodData.servingDescription !== undefined) foodUpdate.serving_description = foodData.servingDescription || null
 
   // If this is an API food being edited for the first time, convert it to custom
   const food = currentFood as { source: string; original_source: string | null }

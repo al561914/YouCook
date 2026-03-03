@@ -11,6 +11,7 @@ export interface CustomFoodFormData {
   brand?: string
   servingSize?: number
   servingUnit?: string
+  servingDescription?: string
   calories?: number
   protein_g?: number
   carbs_g?: number
@@ -42,6 +43,7 @@ export function CustomFoodForm({ open, onOpenChange, onSubmit, food, loading = f
       brand: '',
       servingSize: 100,
       servingUnit: 'g',
+      servingDescription: '',
       calories: 0,
       protein_g: 0,
       carbs_g: 0,
@@ -60,6 +62,7 @@ export function CustomFoodForm({ open, onOpenChange, onSubmit, food, loading = f
         brand: food.brand || '',
         servingSize: food.serving_size || 100,
         servingUnit: food.serving_unit || 'g',
+        servingDescription: food.serving_description || '',
         calories: nutrients?.calories || 0,
         protein_g: nutrients?.protein_g || 0,
         carbs_g: nutrients?.carbs_g || 0,
@@ -74,6 +77,7 @@ export function CustomFoodForm({ open, onOpenChange, onSubmit, food, loading = f
         brand: '',
         servingSize: 100,
         servingUnit: 'g',
+        servingDescription: '',
         calories: 0,
         protein_g: 0,
         carbs_g: 0,
@@ -161,6 +165,16 @@ export function CustomFoodForm({ open, onOpenChange, onSubmit, food, loading = f
                   {...register('servingUnit')}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="servingDescription">Portion Label <span className="text-gray-400 font-normal">(optional)</span></Label>
+              <Input
+                id="servingDescription"
+                placeholder="e.g., 1 container, 1 slice, 2 tbsp"
+                {...register('servingDescription')}
+              />
+              <p className="text-xs text-gray-400">Shown as "Per …" on the food card (e.g., Per 1 slice (28g))</p>
             </div>
           </div>
 
