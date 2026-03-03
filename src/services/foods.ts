@@ -53,69 +53,46 @@ export async function searchLocalFoods(query: string, limit: number = 20): Promi
 }
 
 /**
- * Search foods - local first, then API if needed
+ * Search foods - local DB and edge function (USDA + OFF) run in parallel, results merged.
  */
 export async function searchFoods(query: string, pageSize: number = 10): Promise<SearchFoodsResponse> {
   if (!query || query.trim().length < 2) {
     return { foods: [], totalHits: 0, source: 'local' }
   }
 
-  // Search local database first
-  const localResults = await searchLocalFoods(query, pageSize)
+  // Run local DB and external API search in parallel
+  const [localSettled, apiSettled] = await Promise.allSettled([
+    searchLocalFoods(query, pageSize),
+    supabase.functions.invoke('search-foods', { body: { query, pageSize } }),
+  ])
 
-  // If we have enough local results, return them
-  if (localResults.length >= pageSize) {
-    return {
-      foods: localResults.slice(0, pageSize),
-      totalHits: localResults.length,
-      source: 'local',
-    }
+  const localResults = localSettled.status === 'fulfilled' ? localSettled.value : []
+  const apiData = apiSettled.status === 'fulfilled' ? apiSettled.value.data : null
+  const apiError = apiSettled.status === 'rejected' || apiSettled.value?.error
+
+  // If both failed, throw
+  if (localResults.length === 0 && apiError) {
+    throw new Error('Failed to search foods')
   }
 
-  // If not enough local results, search API
-  const { data, error } = await supabase.functions.invoke('search-foods', {
-    body: { query, pageSize },
-  })
+  const apiResults: FoodSearchResult[] = apiData?.foods || []
 
-  if (error) {
-    // If API fails but we have local results, return them
-    if (localResults.length > 0) {
-      return {
-        foods: localResults,
-        totalHits: localResults.length,
-        source: 'local',
-      }
-    }
-    throw new Error(error.message || 'Failed to search foods')
-  }
-
-  if (data.error) {
-    if (localResults.length > 0) {
-      return {
-        foods: localResults,
-        totalHits: localResults.length,
-        source: 'local',
-      }
-    }
-    throw new Error(data.error)
-  }
-
-  const apiResults = data.foods || []
-
-  // Combine local and API results, removing duplicates
+  // Merge: local first (already saved/cached), then API results not already present
   const combined = [...localResults]
   const existingIds = new Set(localResults.map((f) => f.externalId))
-
   for (const apiFood of apiResults) {
     if (!existingIds.has(apiFood.externalId)) {
       combined.push(apiFood)
     }
   }
 
+  const hasLocal = localResults.length > 0
+  const hasApi = apiResults.length > 0
+
   return {
     foods: combined.slice(0, pageSize),
-    totalHits: (data.totalHits || 0) + localResults.length,
-    source: localResults.length > 0 && apiResults.length > 0 ? 'combined' : localResults.length > 0 ? 'local' : 'api',
+    totalHits: (apiData?.totalHits || 0) + localResults.length,
+    source: hasLocal && hasApi ? 'combined' : hasLocal ? 'local' : 'api',
   }
 }
 
