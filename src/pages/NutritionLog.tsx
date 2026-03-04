@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { format, addDays, isToday } from 'date-fns'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { DailyMacroSummary, MealSection } from '@/components/nutrition'
+import { DailyMacroSummary, MealSection, CopyDayDialog } from '@/components/nutrition'
 import { useNutritionLog } from '@/hooks/useNutritionLog'
 import { MEAL_NAMES } from '@/lib/constants'
 
 export function NutritionLog() {
   const [date, setDate] = useState(new Date())
-  const { entries, loading, error, addEntry, updateEntry, deleteEntry, dailySummary } =
+  const [copyOpen, setCopyOpen] = useState(false)
+  const { entries, loading, error, addEntry, updateEntry, deleteEntry, dailySummary, refresh } =
     useNutritionLog(date)
 
   const prev = () => setDate((d) => addDays(d, -1))
@@ -40,6 +41,14 @@ export function NutritionLog() {
         </Button>
       </div>
 
+      {/* Secondary actions */}
+      <div className="flex justify-end">
+        <Button variant="ghost" size="sm" className="gap-1.5 text-gray-500" onClick={() => setCopyOpen(true)}>
+          <Copy className="h-4 w-4" />
+          Copy from day
+        </Button>
+      </div>
+
       {error && (
         <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3">
           {error}
@@ -48,6 +57,14 @@ export function NutritionLog() {
 
       {/* Daily macro summary */}
       <DailyMacroSummary summary={dailySummary} />
+
+      <CopyDayDialog
+        open={copyOpen}
+        onOpenChange={setCopyOpen}
+        toDate={format(date, 'yyyy-MM-dd')}
+        hasExistingEntries={entries.length > 0}
+        onCopied={refresh}
+      />
 
       {/* Meal sections */}
       {loading ? (

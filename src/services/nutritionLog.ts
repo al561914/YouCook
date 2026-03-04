@@ -69,6 +69,38 @@ export async function getTargets(userId: string): Promise<NutritionTargets | nul
   return data as NutritionTargets | null
 }
 
+export async function copyDayEntries(
+  userId: string,
+  fromDate: string,
+  toDate: string,
+  replace: boolean
+): Promise<number> {
+  const sourceEntries = await getLogEntries(userId, fromDate)
+  if (sourceEntries.length === 0) return 0
+
+  if (replace) {
+    const { error } = await supabase
+      .from('nutrition_log')
+      .delete()
+      .eq('user_id', userId)
+      .eq('date', toDate)
+    if (error) throw error
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const inserts = sourceEntries.map(({ id: _id, created_at: _ca, date: _date, ...rest }) => ({
+    ...rest,
+    date: toDate,
+  }))
+
+  const { error } = await supabase
+    .from('nutrition_log')
+    .insert(inserts as never)
+  if (error) throw error
+
+  return inserts.length
+}
+
 export async function upsertTargets(
   userId: string,
   targets: NutritionTargets
