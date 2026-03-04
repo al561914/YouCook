@@ -24,6 +24,8 @@ export function FoodCard({ food, onEdit, onDelete, onSelect, onSave, selectable 
   const isCustomFood = food.source === 'user' // Only truly custom foods can be edited
   const isSavedFood = 'user_id' in food && food.user_id // Saved API food or custom food
   const isApiFood = food.source === 'usda' || food.source === 'openfoodfacts'
+  // Foods in the local DB have a UUID id; API results have synthetic ids like "usda-12345"
+  const isInLocalDb = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(food.id)
   const source = food.source || 'unknown'
   const originalSource = 'original_source' in food ? food.original_source : null
 
@@ -110,8 +112,8 @@ export function FoodCard({ food, onEdit, onDelete, onSelect, onSave, selectable 
           </div>
         </div>
 
-        {/* Save button for API foods */}
-        {showSaveButton && isApiFood && onSave && (
+        {/* Save button for API foods not yet in local DB */}
+        {showSaveButton && isApiFood && !isInLocalDb && onSave && (
           <div className="mt-4 pt-3 border-t border-gray-200">
             <Button
               size="sm"
