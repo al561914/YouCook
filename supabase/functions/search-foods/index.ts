@@ -157,35 +157,20 @@ serve(async (req) => {
     // Merge and sort results intelligently
     const allFoods = [...usdaFoods, ...offFoods]
 
-    // Scoring system for prioritization
-    const sourceScore: Record<string, number> = {
-      'usda-foundation': 5,
-      'usda-sr-legacy': 4,
-      'usda-branded': 2,
-      'openfoodfacts': 3, // Between SR Legacy and Branded
+    // Sort: Foundation Foods first (most accurate raw foods), then SR Legacy, then Open Food Facts
+    // USDA Branded is excluded from text search — OFF handles packaged products
+    const getScore = (food: FoodResult): number => {
+      if (food.source === 'usda') {
+        return food.externalId.startsWith('Foundation') ? 3 :
+               food.externalId.startsWith('SR Legacy') ? 2 : 1
+      }
+      return 1 // openfoodfacts
     }
 
     const sortedFoods = allFoods.sort((a, b) => {
-      // Determine source score
-      let scoreA = sourceScore['openfoodfacts']
-      let scoreB = sourceScore['openfoodfacts']
-
-      if (a.source === 'usda') {
-        const aType = a.externalId.includes('Foundation') ? 'foundation' :
-                      a.externalId.includes('SR') ? 'sr-legacy' : 'branded'
-        scoreA = sourceScore[`usda-${aType}`] || 1
-      }
-      if (b.source === 'usda') {
-        const bType = b.externalId.includes('Foundation') ? 'foundation' :
-                      b.externalId.includes('SR') ? 'sr-legacy' : 'branded'
-        scoreB = sourceScore[`usda-${bType}`] || 1
-      }
-
-      // First by source score
-      const scoreCompare = scoreB - scoreA
-      if (scoreCompare !== 0) return scoreCompare
-
-      // Then by name length (shorter = more basic)
+      const scoreDiff = getScore(b) - getScore(a)
+      if (scoreDiff !== 0) return scoreDiff
+      // Tie-break: shorter name = more generic (e.g. "Blueberries, raw" vs "Blueberries, raw, organic, brand X")
       return a.name.length - b.name.length
     })
 
@@ -216,8 +201,8 @@ async function searchUSDA(query: string, pageSize: number, apiKey: string): Prom
     },
     body: JSON.stringify({
       query,
-      pageSize: pageSize * 2,
-      dataType: ['Foundation', 'SR Legacy', 'Branded'],
+      pageSize: pageSize * 3, // Fetch more since Foundation/SR Legacy pool is smaller
+      dataType: ['Foundation', 'SR Legacy'],
     }),
   })
 
