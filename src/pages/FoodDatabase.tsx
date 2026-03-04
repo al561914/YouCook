@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Database, Plus, Search, Camera } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,12 +26,41 @@ export function FoodDatabase() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [scannerOpen, setScannerOpen] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Load user's custom foods on mount
   useEffect(() => {
     loadMyFoods()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
+
+  // Debounced live local search as user types
+  useEffect(() => {
+    const query = searchQuery.trim()
+
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+
+    if (query.length === 0) {
+      setSearchResults([])
+      setSearchSource(null)
+      return
+    }
+    if (query.length < 2) return
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const foods = await foodService.searchLocalFoods(query, 20)
+        setSearchResults(foods)
+        setSearchSource('local')
+      } catch {
+        // Silent fail — explicit Search button will show errors
+      }
+    }, 300)
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [searchQuery])
 
   const loadMyFoods = async () => {
     if (!user) return
@@ -50,6 +79,12 @@ export function FoodDatabase() {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!searchQuery.trim()) return
+
+    // Cancel any pending debounce so it doesn't overwrite full results
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
+      debounceRef.current = null
+    }
 
     setSearching(true)
     setError(null)
@@ -332,6 +367,9 @@ export function FoodDatabase() {
                       {searchSource === 'local' ? 'Local Database' :
                        searchSource === 'api' ? 'API Results' : 'Local + API'}
                     </span>
+                  )}
+                  {searchSource === 'local' && (
+                    <span className="ml-2 text-xs text-gray-400">— press Search for USDA &amp; Open Food Facts</span>
                   )}
                 </p>
               </div>
