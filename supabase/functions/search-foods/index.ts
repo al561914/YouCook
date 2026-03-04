@@ -157,14 +157,15 @@ serve(async (req) => {
     // Merge and sort results intelligently
     const allFoods = [...usdaFoods, ...offFoods]
 
-    // Sort: Foundation Foods first (most accurate raw foods), then SR Legacy, then Open Food Facts
+    // Sort: Foundation Foods first, then SR Legacy, then Survey (FNDDS), then Open Food Facts
     // USDA Branded is excluded from text search — OFF handles packaged products
     const getScore = (food: FoodResult): number => {
       if (food.source === 'usda') {
-        return food.externalId.startsWith('Foundation') ? 3 :
-               food.externalId.startsWith('SR Legacy') ? 2 : 1
+        return food.externalId.startsWith('Foundation') ? 4 :
+               food.externalId.startsWith('SR Legacy') ? 3 :
+               food.externalId.startsWith('Survey') ? 2 : 1
       }
-      return 1 // openfoodfacts
+      return 2 // openfoodfacts — same tier as Survey (FNDDS)
     }
 
     const sortedFoods = allFoods.sort((a, b) => {
@@ -202,7 +203,7 @@ async function searchUSDA(query: string, pageSize: number, apiKey: string): Prom
     body: JSON.stringify({
       query,
       pageSize: pageSize * 3, // Fetch more since Foundation/SR Legacy pool is smaller
-      dataType: ['Foundation', 'SR Legacy'],
+      dataType: ['Foundation', 'SR Legacy', 'Survey (FNDDS)'],
     }),
   })
 
