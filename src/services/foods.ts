@@ -39,6 +39,7 @@ export async function searchLocalFoods(query: string, limit: number = 20): Promi
       servingSize: food.serving_size || null,
       servingUnit: food.serving_unit || null,
       servingDescription: food.serving_description || null,
+      userId: food.user_id || null,
       nutrients: {
         calories: nutrients.calories || null,
         protein_g: nutrients.protein_g || null,

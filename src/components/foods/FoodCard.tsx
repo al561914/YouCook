@@ -22,10 +22,12 @@ interface FoodCardProps {
 export function FoodCard({ food, onEdit, onDelete, onSelect, onSave, selectable = false, showSaveButton = false }: FoodCardProps) {
   const nutrients = 'nutrients' in food ? food.nutrients : (food as FoodWithNutrients).food_nutrients?.[0]
   const isCustomFood = food.source === 'user' // Only truly custom foods can be edited
-  const isSavedFood = 'user_id' in food && food.user_id // Saved API food or custom food
+  const isSavedFood = 'user_id' in food && food.user_id // FoodWithNutrients with user_id
+  const ownedViaSearch = 'userId' in food && food.userId  // FoodSearchResult with userId
   const isApiFood = food.source === 'usda' || food.source === 'openfoodfacts'
   // Foods in the local DB have a UUID id; API results have synthetic ids like "usda-12345"
   const isInLocalDb = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(food.id)
+  const showActions = isSavedFood || ownedViaSearch
   const source = food.source || 'unknown'
   const originalSource = 'original_source' in food ? food.original_source : null
 
@@ -131,8 +133,8 @@ export function FoodCard({ food, onEdit, onDelete, onSelect, onSave, selectable 
         )}
       </CardContent>
 
-      {/* Actions dropdown - for saved foods */}
-      {isSavedFood && (onEdit || onDelete) && (
+      {/* Actions dropdown - for owned foods (My Custom Foods section or local search results) */}
+      {showActions && (onEdit || onDelete) && (
         <div className="absolute top-4 right-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>

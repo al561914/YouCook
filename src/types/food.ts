@@ -29,6 +29,7 @@ export interface FoodSearchResult {
   servingSize: number | null
   servingUnit: string | null
   servingDescription: string | null
+  userId?: string | null  // set when food comes from local DB
   nutrients: {
     calories: number | null
     protein_g: number | null

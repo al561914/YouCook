@@ -135,13 +135,23 @@ export function FoodDatabase() {
     setCustomFoodFormOpen(true)
   }
 
-  const handleEditFood = (food: FoodWithNutrients) => {
-    setEditingFood(food)
+  const handleEditFood = async (food: FoodWithNutrients | FoodSearchResult) => {
+    // FoodSearchResult from search results — fetch full food for the form
+    if (!('food_nutrients' in food)) {
+      try {
+        const full = await foodService.getFoodWithNutrients(food.id)
+        setEditingFood(full)
+      } catch {
+        return
+      }
+    } else {
+      setEditingFood(food as FoodWithNutrients)
+    }
     setCustomFoodFormOpen(true)
   }
 
-  const handleDeleteFood = (food: FoodWithNutrients) => {
-    setDeletingFood(food)
+  const handleDeleteFood = (food: FoodWithNutrients | FoodSearchResult) => {
+    setDeletingFood(food as FoodWithNutrients) // confirm dialog only needs id + name
   }
 
   const handleFormSubmit = async (data: CustomFoodFormData) => {
